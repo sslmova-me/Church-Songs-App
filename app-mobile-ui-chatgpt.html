@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SongTag Mobile App</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f8fafc;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .header {
+      padding: 16px;
+      font-weight: bold;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .back-btn {
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .content {
+      padding: 16px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 14px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .bottom-nav {
+      display: flex;
+      border-top: 1px solid #eee;
+    }
+
+    .nav-item {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: #6366f1;
+      font-weight: bold;
+    }
+
+    .fab {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: white;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 12px;
+      border: none;
+      background: #0f172a;
+      color: white;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="homeScreen">
+    <div class="header">🎵 SongTag</div>
+    <div class="content">
+      <input placeholder="Search songs..." />
+
+      <div class="card">📊 Songs: 0</div>
+      <div class="card">🏷️ Tags: 0</div>
+
+      <div class="card">Recent Song...</div>
+    </div>
+  </div>
+
+  <!-- SONGS -->
+  <div class="screen" id="songsScreen">
+    <div class="header">Songs</div>
+    <div class="content">
+      <input placeholder="Search songs..." />
+
+      <div class="card">🎵 Song Title</div>
+      <div class="card">🎵 Another Song</div>
+    </div>
+  </div>
+
+  <!-- SONG DETAILS -->
+  <div class="screen" id="songDetailScreen">
+    <div class="header">
+      <span class="back-btn" onclick="goBack()">←</span>
+      Song Title
+    </div>
+    <div class="content">
+      <div class="card">🏷️ Tags here</div>
+      <div class="card">Lyrics preview...</div>
+
+      <button>Edit</button>
+      <button>Delete</button>
+    </div>
+  </div>
+
+  <!-- ADD SONG -->
+  <div class="screen" id="addSongScreen">
+    <div class="header">
+      <span class="back-btn" onclick="goBack()">←</span>
+      Add Song
+    </div>
+    <div class="content">
+      <input placeholder="Song title" />
+      <textarea placeholder="Lyrics..."></textarea>
+
+      <button>Save</button>
+    </div>
+  </div>
+
+  <!-- TAGS -->
+  <div class="screen" id="tagsScreen">
+    <div class="header">Tags</div>
+    <div class="content">
+      <input placeholder="Search tags..." />
+
+      <div class="card">🏷️ Worship</div>
+      <div class="card">🏷️ Afrobeat</div>
+    </div>
+  </div>
+
+  <!-- TAG DETAILS -->
+  <div class="screen" id="tagDetailScreen">
+    <div class="header">
+      <span class="back-btn" onclick="goBack()">←</span>
+      Tag Name
+    </div>
+    <div class="content">
+      <div class="card">Song under tag</div>
+      <div class="card">Another song</div>
+
+      <button>Edit Tag</button>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchScreen('homeScreen')">🏠</div>
+    <div class="nav-item" onclick="switchScreen('songsScreen')">🎵</div>
+    <div class="nav-item" onclick="switchScreen('tagsScreen')">🏷️</div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<div class="fab" onclick="switchScreen('addSongScreen')">+</div>
+
+<script>
+  let historyStack = [];
+
+  function switchScreen(id) {
+    const current = document.querySelector('.screen.active');
+    if (current) historyStack.push(current.id);
+
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (id === 'homeScreen') document.querySelectorAll('.nav-item')[0].classList.add('active');
+    if (id === 'songsScreen') document.querySelectorAll('.nav-item')[1].classList.add('active');
+    if (id === 'tagsScreen') document.querySelectorAll('.nav-item')[2].classList.add('active');
+  }
+
+  function goBack() {
+    const prev = historyStack.pop();
+    if (prev) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(prev).classList.add('active');
+    }
+  }
+</script>
+
+</body>
+</html>

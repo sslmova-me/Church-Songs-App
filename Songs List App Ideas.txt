@@ -1,0 +1,154 @@
+11:26 AM 4/17/2026
+Mixes should be under tags
+OR 
+I think it should be a separate feature on its own
+Title
+Description
+Songs list
+
+11:15 AM 4/17/2026
+Most of the feature of the Filter by Tags is by OR and AND of the tags, 
+Add a feature of excluding specific tags
+
+
+10:45 AM 4/17/2026
+Because our spellings or lyrics for desame song might differ sometimes...How can we unify them or what smart search logic can we come up with
+One source of truth (online database - continously refined and updated) users can get data from
+
+9:38 AM 4/17/2026
+For addition of the Hymns  
+For the Hymns admin app, we will add a feature to export specific stuffs out of the hymns data - we need the title majorly (the yoruba and english) and the lyrics (yoruba and english) - options for all hymns, specific hymns (add the numbers of the hymns - comma separated)
+
+then we will add a feature in the Songs app to import bulk items at once from a json, in this feature, during the addition stage, 
+
+1. There will be a mapping stage/section, where the system detects the items in the json file and then asks what to map to the song's title, lyrics etc
+
+2. We will be able to see all the list of the items to be added, quickly we can search through, filter through to add any of the songs on the list to a particular tag, and after we are done, it saves the data to the appropraite place
+
+Let's also have this feature of selecting the tags to go for each song being added in the bulk title addition (add a new button)
+
+
+Addition of new field - keyphrase (more than one word - separated with commas) to songs and tags
+(empower the search feature to look through the tags too and populate the list with songs that have the tag keyphrase/keyword)
+...well...its still a consideration, I think the TAG functionality already existing somehow is okay to cover this
+BECAUSE OUR SPELLINGS MIGHT NOT MATCH MOST OF THE TIME, I GUESS THE TAG FEATURE IS STILL THE BEST FOR NOW - MANUALLY ADDING THE SONG TO A TAG
+
+
+UP 
+NEW IDEAS/ADDITIONS NOT YET IMPLEMENTED
+#####################################################
+
+
+##########
+Mobile revamp
+4:28 PM 4/16/2026
+I have uploaded an html code for a very functional app. Look/review the code very well...This is the functionality I want for the app, but I want to transform it totally to a mobile app/experience/ui
+We want a new look and feel. Assuming this is going to be a Mobile app with a 4.6-5.0 ui/ux rating. We want to make this app like perfectly mobile, but still works in the desktop view. Transform it. Let it have screens, back buttons. you know let the ui/ux be amazing.
+
+The code I shared was just for you to have an idea of how the system currently works, you are free to start your implementation from scratch, but achieve exactly the same functionalities, but you might take a whole new approach.
+
+NB. SAME FUNCTIONALITY INTACT...NEW APPROACH, NEW LOOK, NEW FEEL
+
+We will have a flash screen (the logo and text fades in/bounces in)
+
+On the main screen, 
+The top Bar/App Bar (fixed) at the top
+we will have an hamburger icon at the top left,
+the app logo in the center
+Gear/settings icon at the far right
+
+We will also have a bottom bar with icons and text
+List of texts (add icons for them)
+Songs
+Tags
+Mixes (feature coming soon)
+Stats 
+Settings
+
+Talk to me...Don't give me the code yet...Let me know we are on the same page
+
+
+
+
+7:00 AM 4/16/2026
+The FAB buttons on the Songs Screen is moving along with the Songs list, I thought it was supposed to be fixed.
+
+The fonts sizes and the icon sizes of the items on the bottom bar should reduce from 576px downwards
+to like 14px (font size)
+
+We still have a lot to correct. Let's take it one after the other.
+
+Let's have a flash screen before the app home screen itself
+
+On the Home Screen
+
+The Orin Tag Title should be centered.
+
+Make the search input full width
+Remove the filter phrase and A-Z sort buttons
+
+
+1. on the home screen, lets have 5 icons at the bottom bar.
+We already have
+Songs, Tags, We are taking Stats out of there
+So we add 3 more
+
+On the Songs Screen, 
+Lets have 2 FABs
+
+fab + icon
+to add song, bulk title, bulk title and lyrics
+
+another funnel fab icon for filtering
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- The display of the hint of the tag, should show under the tag badge using a very small text for it. It should not be more than 2 lines - not as a hover hint
+- In the bulk edit feature, we should have the option to add the new entries to a specific tag, or create a new tag for them where they will all be added to
+- In the tags list as we have the edit and delete buttons, we should have a plus button (should come before the edit button). When its clicked it opens a modal - searchable and filterable - listing all the songs (exclusive of songs already under the tag), so users search and check songs they will like to add to the currently clicked tag, then one or multiple (there should be an indicator of the count of songs selected to be added). After selection, there should be a add to tag button at the bottom, when clicked it adds the songs selected to the tag and then pops up a modal giving a summary of what just happened i.e. the number of songs added to that tag
+
+- Looking at the mobile version, generally I think you should reduce the size of some big titles so that they are fit for mobile - enabling good spacing
+
+
+Translations...
+Add a new field for translations, so every song can have more than 1 translation 
+A translation is just the lyrics added in another language.
+
+
+
+- Like a smart auto detection feature - If you notice the title of a song is closely very similar to what Has already been added in the list, let there be a prompt to notify me of that before the new song is added.
+I will like to see this.
+When the Bulk addition feature is used, when the 'Add all' button is clicked, I will like to see a Progress summary modal that shows the progress of the addition of the songs, how they are added 1 after the other, a progress bar, count and after it gets to 100, it just gives me a short summary of the addition, then I can close the progress modal
+If it detects that has entry is similar to something that already exists, it should prompt me if I want to add it or skip it
+- Reduce the size of the song title and the card too a bit
+- A new field for the tag entry 'Short description' for each tag
+- Because the tags is still going to increase as I'm adding many more, let the tags filter on the songs section not be a dropdown again. let it popup a modal that is searchable and filterable that lists all the available tags, and lets me check the ones I will like. At the bottom of the modal, I should be able to see chips of the tags I have checked.
+
+NB: keep the existing design features and layout (strict warning), only update what is very neccessary
+
+
+
+
+
+
+
+
+
+
+##### Tags by Artists
+'Tope Alabi', 'Sola Allyson', 'Frank Edwards' etc
+'Hymns' (Songs that are hymns)

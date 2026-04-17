@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>OrinTag</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --accent: #f59e0b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow: hidden; }
+
+    #splash {
+      position: fixed; inset: 0; background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      display: flex; align-items: center; justify-content: center; flex-direction: column; color: white; z-index: 9999;
+      transition: opacity 1.4s ease;
+    }
+    .splash-content { text-align: center; animation: splashPop 1.8s cubic-bezier(0.34,1.56,0.64,1); }
+    .splash-content h1 { font-size: 3.8rem; font-weight: 800; letter-spacing: -2px; }
+    .splash-content p { font-size: 1.25rem; margin-top: 8px; opacity: 0.95; }
+    @keyframes splashPop { 0% { transform: scale(0.3) translateY(60px); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 64px; background: white; border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; padding: 0 18px; z-index: 1000; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .hamburger, .settings-btn { font-size: 1.7rem; cursor: pointer; color: var(--muted); }
+    .app-logo { flex: 1; text-align: center; font-size: 1.45rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 72px; background: white; border-top: 1px solid #e2e8f0;
+      display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 0.75rem; font-weight: 500;
+      padding: 6px 12px; border-radius: 12px; transition: all 0.25s;
+    }
+    .nav-item.active { color: var(--primary); background: #f0f4ff; }
+    .nav-item i { font-size: 1.55rem; margin-bottom: 4px; }
+
+    .main-content { padding: 78px 16px 90px; min-height: 100vh; max-width: 720px; margin: 0 auto; }
+
+    .song-card {
+      background: var(--card); border-radius: 22px; margin-bottom: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.07); overflow: hidden;
+    }
+    .song-header { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .song-title { font-weight: 700; font-size: 1.1rem; }
+    .song-body { padding: 0 20px 20px; display: none; }
+    .song-card.expanded .song-body { display: block; }
+    .lyrics-preview { font-size: 0.88rem; color: #475569; font-style: italic; margin-bottom: 14px; line-height: 1.4; }
+    .tag-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .tag-chip { background: #e0e7ff; color: #3730a3; padding: 5px 14px; border-radius: 9999px; font-size: 0.82rem; font-weight: 500; }
+
+    .fab {
+      position: fixed; bottom: 96px; right: 20px; width: 62px; height: 62px; background: var(--accent); color: white;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.9rem;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.45); z-index: 950;
+    }
+
+    .bottom-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 28px; border-top-right-radius: 28px;
+      max-height: 92vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); z-index: 2000;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
+    }
+    .bottom-sheet.show { transform: translateY(0); }
+    .sheet-header {
+      padding: 18px 22px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; background: white; z-index: 10;
+    }
+    .close-sheet { font-size: 1.6rem; cursor: pointer; color: #64748b; }
+
+    .btn { padding: 14px 24px; border-radius: 9999px; font-weight: 600; border: none; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid #cbd5e1; }
+
+    .count-badge { background: #e0e7ff; color: #1e40af; padding: 4px 12px; border-radius: 9999px; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+  <!-- SPLASH -->
+  <div id="splash">
+    <div class="splash-content">
+      <h1>🎵 OrinTag</h1>
+      <p>Songs • Lyrics • Tags</p>
+    </div>
+  </div>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="hamburger"><i class="fa-solid fa-bars"></i></div>
+    <div class="app-logo"><span style="font-size:1.6rem;">🎵</span> OrinTag</div>
+    <div class="settings-btn"><i class="fa-solid fa-gear"></i></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+
+    <!-- SONGS SCREEN -->
+    <div id="songsScreen">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2>Songs <span id="songCountBadge" class="count-badge"></span></h2>
+        <button class="btn btn-primary" id="addSongBtn">+ Song</button>
+      </div>
+      <input type="text" id="songSearch" placeholder="🔍 Search songs..." style="width:100%;padding:16px 20px;border-radius:9999px;border:1px solid #cbd5e1;margin-bottom:16px;">
+      <div id="songsContainer"></div>
+    </div>
+
+    <!-- TAGS SCREEN -->
+    <div id="tagsScreen" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2>Tags <span id="tagCountBadge" class="count-badge"></span></h2>
+        <button class="btn btn-primary" id="addTagBtn">+ Tag</button>
+      </div>
+      <div id="tagsContainer"></div>
+    </div>
+
+    <!-- MIXES -->
+    <div id="mixesScreen" style="display:none; text-align:center; padding:100px 20px; color:var(--muted);">
+      <h2>🔀 Mixes</h2>
+      <p>Coming soon</p>
+    </div>
+
+    <!-- STATS -->
+    <div id="statsScreen" style="display:none;">
+      <h2>Statistics</h2>
+      <div id="statsContent" style="background:white;border-radius:22px;padding:28px;box-shadow:0 8px 25px rgba(0,0,0,0.07);"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settingsScreen" style="display:none;">
+      <h2>Settings</h2>
+      <div style="background:white;border-radius:22px;padding:24px;box-shadow:0 8px 25px rgba(0,0,0,0.07);">
+        <button class="btn btn-outline" id="exportBtn" style="width:100%;margin-bottom:12px;">📥 Export JSON</button>
+        <button class="btn btn-outline" id="importBtn" style="width:100%;">📤 Import JSON</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" data-tab="songs"><i class="fa-solid fa-music"></i><span>Songs</span></div>
+    <div class="nav-item" data-tab="tags"><i class="fa-solid fa-tags"></i><span>Tags</span></div>
+    <div class="nav-item" data-tab="mixes"><i class="fa-solid fa-shuffle"></i><span>Mixes</span></div>
+    <div class="nav-item" data-tab="stats"><i class="fa-solid fa-chart-bar"></i><span>Stats</span></div>
+    <div class="nav-item" data-tab="settings"><i class="fa-solid fa-gear"></i><span>More</span></div>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab" id="fabBtn"><i class="fa-solid fa-plus"></i></div>
+
+  <!-- BOTTOM SHEET -->
+  <div id="bottomSheet" class="bottom-sheet">
+    <div class="sheet-header">
+      <span id="sheetTitle" style="font-weight:700;font-size:1.25rem;"></span>
+      <span class="close-sheet" id="closeSheet">✕</span>
+    </div>
+    <div id="sheetContent" style="padding:20px;"></div>
+  </div>
+
+<script>
+// ==================== DATA & STORAGE (FIXED & MATCHING ORIGINAL) ====================
+let songs = [];
+let tags = [];
+let songTags = [];
+let editingSongId = null;
+let currentAssignSongId = null;
+
+const STORAGE_KEY = "SongTagAppData";   // ← Same key as your original file!
+
+function genId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+
+function saveToLocalStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ songs, tags, songTags }));
+}
+
+function loadFromLocalStorage() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      songs = (data.songs || []).map(s => ({ ...s, lyrics: s.lyrics || "" }));
+      tags = (data.tags || []).map(t => ({ ...t, description: t.description || "" }));
+      songTags = data.songTags || [];
+    } catch(e) {
+      console.error("Failed to load data", e);
+    }
+  }
+
+  // Only use sample data if nothing exists
+  if (songs.length === 0) {
+    songs = [
+      { id: genId(), title: "Aye", lyrics: "Aye aye aye\nOmo to shan..." },
+      { id: genId(), title: "Ife", lyrics: "Ife mi\nMo fe e..." },
+      { id: genId(), title: "Orente", lyrics: "Orente mi\nWahala..." },
+      { id: genId(), title: "Fall", lyrics: "Fall in love again..." }
+    ];
+    tags = [
+      { id: genId(), name: "Afrobeat", description: "" },
+      { id: genId(), name: "Love", description: "" }
+    ];
+    songTags = [
+      { songId: songs[0].id, tagId: tags[0].id },
+      { songId: songs[1].id, tagId: tags[1].id }
+    ];
+    saveToLocalStorage();
+  }
+  updateCounts();
+}
+
+function updateCounts() {
+  document.getElementById('songCountBadge').innerText = songs.length;
+  document.getElementById('tagCountBadge').innerText = tags.length;
+}
+
+function getTagsForSong(songId) {
+  return tags.filter(t => songTags.some(st => st.songId === songId && st.tagId === t.id));
+}
+
+// ==================== RENDERING ====================
+function renderSongs() {
+  const searchTerm = document.getElementById('songSearch').value.toLowerCase().trim();
+  let filtered = songs.filter(s => s.title.toLowerCase().includes(searchTerm));
+
+  const container = document.getElementById('songsContainer');
+  container.innerHTML = filtered.map(song => {
+    const tagList = getTagsForSong(song.id);
+    const preview = song.lyrics ? song.lyrics.substring(0, 70) + (song.lyrics.length > 70 ? '…' : '') : 'No lyrics';
+    return `
+      <div class="song-card" data-id="${song.id}">
+        <div class="song-header">
+          <div class="song-title">🎵 ${song.title}</div>
+          <i class="fa-solid fa-chevron-down"></i>
+        </div>
+        <div class="song-body">
+          <div class="lyrics-preview">${preview}</div>
+          <div class="tag-chips">
+            ${tagList.map(t => `<span class="tag-chip">${t.name}</span>`).join('') || '<span style="color:#94a3b8;">No tags</span>'}
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-outline" onclick="viewLyrics('${song.id}')" style="flex:1">📄 Lyrics</button>
+            <button class="btn btn-primary" onclick="openAssignTags('${song.id}')" style="flex:1">🏷️ Tags</button>
+            <button class="btn btn-outline" onclick="editSong('${song.id}')" style="flex:1">✏️ Edit</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.querySelectorAll('.song-header').forEach(header => {
+    header.addEventListener('click', () => header.parentElement.classList.toggle('expanded'));
+  });
+}
+
+function renderTags() {
+  const container = document.getElementById('tagsContainer');
+  container.innerHTML = tags.map(tag => {
+    const count = songTags.filter(st => st.tagId === tag.id).length;
+    return `
+      <div style="background:white;border-radius:22px;padding:18px;margin-bottom:14px;box-shadow:0 6px 18px rgba(0,0,0,0.07);" onclick="viewTagSongs('${tag.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:700;font-size:1.15rem;">🏷️ ${tag.name}</div>
+          <div style="background:#e0e7ff;color:#1e40af;padding:6px 16px;border-radius:9999px;font-size:0.9rem;">${count} songs</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Bottom Sheet
+function showSheet(title, html) {
+  document.getElementById('sheetTitle').innerText = title;
+  document.getElementById('sheetContent').innerHTML = html;
+  document.getElementById('bottomSheet').classList.add('show');
+}
+
+function hideSheet() {
+  document.getElementById('bottomSheet').classList.remove('show');
+}
+
+// Song actions
+window.viewLyrics = function(id) {
+  const song = songs.find(s => s.id === id);
+  if (song) showSheet(song.title, `<pre style="white-space:pre-wrap;font-family:inherit;line-height:1.6;">${song.lyrics || "No lyrics"}</pre>`);
+};
+
+window.editSong = function(id) {
+  editingSongId = id;
+  const song = songs.find(s => s.id === id);
+  showSheet('Edit Song', `
+    <input id="editTitle" value="${song.title}" style="width:100%;padding:14px;border-radius:9999px;border:1px solid #cbd5e1;margin-bottom:12px;">
+    <textarea id="editLyrics" style="width:100%;height:180px;padding:14px;border-radius:20px;border:1px solid #cbd5e1;">${song.lyrics || ''}</textarea>
+    <div style="margin-top:20px;display:flex;gap:12px;">
+      <button class="btn btn-outline" style="flex:1" onclick="hideSheet()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveEditedSong()">Save Changes</button>
+    </div>
+  `);
+};
+
+window.saveEditedSong = function() {
+  const title = document.getElementById('editTitle').value.trim();
+  const lyrics = document.getElementById('editLyrics').value.trim();
+  if (!title) return alert("Title is required");
+  const song = songs.find(s => s.id === editingSongId);
+  if (song) {
+    song.title = title;
+    song.lyrics = lyrics;
+  }
+  saveToLocalStorage();
+  hideSheet();
+  renderSongs();
+};
+
+window.openAssignTags = function(songId) {
+  currentAssignSongId = songId;
+  let html = '';
+  tags.forEach(tag => {
+    const isChecked = songTags.some(st => st.songId === songId && st.tagId === tag.id) ? 'checked' : '';
+    html += `
+      <div style="padding:12px 0;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;">
+        <input type="checkbox" id="tagcb_${tag.id}" ${isChecked}>
+        <label for="tagcb_${tag.id}" style="flex:1;cursor:pointer;margin-left:12px;">🏷️ ${tag.name}</label>
+      </div>`;
+  });
+  html += `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="saveTagAssignment()">Save Tags</button>`;
+  showSheet('Assign Tags', html);
+};
+
+window.saveTagAssignment = function() {
+  songTags = songTags.filter(st => st.songId !== currentAssignSongId);
+  tags.forEach(tag => {
+    const cb = document.getElementById(`tagcb_${tag.id}`);
+    if (cb && cb.checked) songTags.push({songId: currentAssignSongId, tagId: tag.id});
+  });
+  saveToLocalStorage();
+  hideSheet();
+  renderSongs();
+  renderTags();
+};
+
+window.viewTagSongs = function(tagId) {
+  const tag = tags.find(t => t.id === tagId);
+  const songIds = songTags.filter(st => st.tagId === tagId).map(st => st.songId);
+  const tagSongsList = songs.filter(s => songIds.includes(s.id));
+  let html = `<h3 style="margin-bottom:16px;">Songs in "${tag.name}" (${tagSongsList.length})</h3>`;
+  tagSongsList.forEach(s => {
+    html += `<div style="padding:14px;background:#f8fafc;border-radius:16px;margin-bottom:10px;">🎵 ${s.title}</div>`;
+  });
+  showSheet(`Songs in ${tag.name}`, html);
+};
+
+// Tab switching
+function switchTab(tab) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+  ['songsScreen','tagsScreen','mixesScreen','statsScreen','settingsScreen'].forEach(id => {
+    document.getElementById(id).style.display = id === tab + 'Screen' ? 'block' : 'none';
+  });
+}
+
+// Bind events
+function bindEvents() {
+  document.getElementById('addSongBtn').onclick = () => {
+    editingSongId = null;
+    showSheet('Add New Song', `
+      <input id="newTitle" placeholder="Song title" style="width:100%;padding:14px;border-radius:9999px;border:1px solid #cbd5e1;margin-bottom:12px;">
+      <textarea id="newLyrics" placeholder="Full lyrics..." style="width:100%;height:180px;padding:14px;border-radius:20px;border:1px solid #cbd5e1;"></textarea>
+      <button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="saveNewSong()">Save Song</button>
+    `);
+  };
+
+  window.saveNewSong = function() {
+    const title = document.getElementById('newTitle').value.trim();
+    const lyrics = document.getElementById('newLyrics').value.trim();
+    if (!title) return alert("Title required");
+    songs.push({id: genId(), title, lyrics});
+    saveToLocalStorage();
+    hideSheet();
+    renderSongs();
+  };
+
+  document.getElementById('addTagBtn').onclick = () => {
+    showSheet('Add New Tag', `
+      <input id="newTagName" placeholder="Tag name e.g. Worship" style="width:100%;padding:14px;border-radius:9999px;border:1px solid #cbd5e1;">
+      <button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="saveNewTag()">Create Tag</button>
+    `);
+  };
+
+  window.saveNewTag = function() {
+    const name = document.getElementById('newTagName').value.trim();
+    if (!name) return alert("Tag name required");
+    tags.push({id: genId(), name, description: ''});
+    saveToLocalStorage();
+    hideSheet();
+    renderTags();
+  };
+
+  document.getElementById('songSearch').addEventListener('input', renderSongs);
+
+  document.getElementById('fabBtn').addEventListener('click', () => document.getElementById('addSongBtn').click());
+
+  document.getElementById('exportBtn').onclick = () => {
+    const data = JSON.stringify({songs, tags, songTags}, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], {type: 'application/json'}));
+    a.download = `orintag_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  };
+
+  document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
+  document.getElementById('importFileInput').onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        const data = JSON.parse(ev.target.result);
+        songs = data.songs || songs;
+        tags = data.tags || tags;
+        songTags = data.songTags || songTags;
+        saveToLocalStorage();
+        renderSongs();
+        renderTags();
+        alert("Import successful! Data loaded.");
+      } catch(err) {
+        alert("Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  document.getElementById('closeSheet').onclick = hideSheet;
+
+  // Bottom navigation
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => switchTab(item.dataset.tab));
+  });
+}
+
+function init() {
+  loadFromLocalStorage();   // This is now called first and correctly
+  renderSongs();
+  renderTags();
+  bindEvents();
+
+  // Splash
+  setTimeout(() => {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => document.getElementById('splash').style.display = 'none', 1400);
+  }, 1600);
+
+  switchTab('songs');
+}
+
+init();
+</script>
+</body>
+</html>
