@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>🎵 OrinTag · Songs, Tags & Mixes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <button class="menu-btn" id="menuToggle">☰</button>
+    <div class="app-title">🎵 OrinTag</div>
+    <div class="top-bar-right"></div>
+  </div>
+
+  <!-- Drawer Overlay & Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h3>Menu</h3>
+      <button class="drawer-close" id="drawerClose">✖</button>
+    </div>
+    <div class="drawer-nav">
+      <div class="drawer-item active" data-panel="songs"><span>🎵</span> Songs <span class="drawer-badge" id="drawerSongsCount">0</span></div>
+      <div class="drawer-item" data-panel="tags"><span>🏷️</span> Tags <span class="drawer-badge" id="drawerTagsCount">0</span></div>
+      <div class="drawer-item" data-panel="mixes"><span>🎚️</span> Mixes <span class="drawer-badge" id="drawerMixesCount">0</span></div>
+      <div class="drawer-item" data-panel="settings"><span>⚙️</span> Settings</div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn btn-outline" id="exportBtnDrawer" style="width:100%;">📥 Export</button>
+      <button class="btn btn-outline" id="importBtnDrawer" style="width:100%; margin-top:8px;">📤 Import</button>
+    </div>
+  </div>
+
+  <!-- Main Panels Container -->
+  <div class="panel-container">
+    <!-- SONGS PANEL -->
+    <div class="panel active" id="panel-songs">
+      <div class="panel-header-row">
+        <div class="panel-title"><h2>🎵 Songs</h2> <span class="count-badge" id="songCountBadge">0</span></div>
+        <select id="sortSongs" class="sort-select">
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+          <option value="recent">Most recent</option>
+        </select>
+      </div>
+      <input type="text" id="songSearch" class="search-full" placeholder="🔍 Search songs..." autocomplete="off">
+      <div id="activeFilterBadge" class="filter-badge info-hint"></div>
+      <div id="songsContainer" class="songs-list"></div>
+    </div>
+
+    <!-- TAGS PANEL -->
+    <div class="panel" id="panel-tags">
+      <div class="panel-header-row">
+        <div class="panel-title"><h2>🏷️ Tags</h2> <span class="count-badge" id="tagCountBadge">0</span></div>
+        <select id="sortTags" class="sort-select">
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
+      </div>
+      <input type="text" id="tagSearch" class="search-full" placeholder="🔍 Filter tags...">
+      <div id="tagsContainer" class="tags-list"></div>
+    </div>
+
+    <!-- MIXES PANEL -->
+    <div class="panel" id="panel-mixes">
+      <div class="panel-header-row">
+        <div class="panel-title"><h2>🎚️ Mixes</h2> <span class="count-badge" id="mixCountBadge">0</span></div>
+        <select id="sortMixes" class="sort-select">
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+          <option value="recent">Most recent</option>
+        </select>
+      </div>
+      <input type="text" id="mixSearch" class="search-full" placeholder="🔍 Filter mixes...">
+      <div id="mixesContainer" class="mixes-list"></div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+      <div class="panel-header-row"><h2>⚙️ Settings</h2></div>
+      <div class="settings-section">
+        <h3>Data Management</h3>
+        <p style="margin: 1rem 0; color: #475569;">Export or import your entire library.</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn btn-primary" id="exportBtnSettings">📥 Export JSON</button>
+          <button class="btn btn-outline" id="importBtnSettings">📤 Import JSON</button>
+        </div>
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #e2e8f0;">
+        <h3>Reset</h3>
+        <p style="margin: 1rem 0; color: #b91c1c;">Clear all songs, tags, and mixes.</p>
+        <button class="danger-btn" id="resetAllDataBtn">⚠️ Reset All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FABs Container -->
+  <div class="fab-container" id="fabContainer"></div>
+
+  <!-- Bottom Drawer for Song Add Actions -->
+  <div class="drawer-overlay-bottom" id="bottomDrawerOverlay"></div>
+  <div class="bottom-drawer" id="bottomDrawer">
+    <div class="drawer-header-row">
+      <h3>Add Songs</h3>
+      <button class="drawer-close" id="closeBottomDrawer">✖</button>
+    </div>
+    <div class="drawer-options">
+      <div class="drawer-option" id="addSingleSongOption">🎵 Add a Song</div>
+      <div class="drawer-option" id="bulkTitlesOption">📚 Bulk Titles</div>
+      <div class="drawer-option" id="bulkLyricsOption">📝 Bulk + Lyrics</div>
+    </div>
+    <button class="cancel-btn" id="cancelBottomDrawer">Cancel</button>
+  </div>
+</div>
+
+<!-- ======================== MODALS ======================== -->
+<!-- Add/Edit Song Modal -->
+<div id="songModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="songModalTitle">Add Song</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <input type="text" id="songTitleInput" placeholder="Song title (leave empty to auto‑generate from lyrics)" class="modal-search">
+    <textarea id="songLyricsInput" class="modal-textarea" placeholder="📝 Full lyrics (Yoruba/English)..."></textarea>
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="saveSongBtn" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lyrics View Modal -->
+<div id="lyricsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>📄 Full Lyrics</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div id="lyricsContent" style="white-space: pre-wrap; line-height: 1.5; max-height: 60vh; overflow-y: auto;"></div>
+    <div class="modal-footer"><button class="btn btn-outline close-modal">Close</button></div>
+  </div>
+</div>
+
+<!-- Add Tag Modal -->
+<div id="addTagModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>Add Tag</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <input type="text" id="addTagNameInput" placeholder="Tag name (e.g. 'Afrobeat', 'Worship')" class="modal-search">
+    <textarea id="addTagDescInput" placeholder="Short description (optional)" class="modal-textarea" rows="2"></textarea>
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="confirmAddTagBtn" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Tag Modal -->
+<div id="editTagModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="editTagModalTitle">Edit Tag</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div class="modal-tabs">
+      <button id="editTagDetailsTab" class="modal-tab active">Edit Details</button>
+      <button id="editTagSongsTab" class="modal-tab">Manage Songs</button>
+    </div>
+    <div id="editTagDetailsPanel">
+      <input type="text" id="editTagNameInput" placeholder="Tag name" class="modal-search">
+      <textarea id="editTagDescInput" placeholder="Short description (optional)" class="modal-textarea" rows="2"></textarea>
+    </div>
+    <div id="editTagSongsPanel" style="display: none;">
+      <input type="text" id="editTagSongsSearch" placeholder="🔎 Search songs in this tag..." class="modal-search">
+      <div id="editTagSongsList" class="check-list"></div>
+      <div class="selected-count" id="editTagSongsSelectedCount">0 songs will remain (0 to remove)</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="saveEditTagBtn" class="btn btn-primary">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Tags to Song Modal -->
+<div id="assignTagsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span>Assign Tags to Song</span>
+      <div class="modal-header-right"><span id="assignTagsCount" class="modal-count-chip">0 tags</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    </div>
+    <input type="text" id="assignTagSearch" placeholder="🔎 Search tags..." class="modal-search">
+    <div id="assignTagsList" class="check-list"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="confirmAssignTagsBtn" class="btn btn-primary">Save Tags</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Add Titles Modal -->
+<div id="bulkModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Bulk Add Song Titles <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <p style="font-size:0.8rem;">📌 <strong>Tip:</strong> Start a line with <code>#</code> to mark the beginning of a multi‑line title. Otherwise each line = one title.</p>
+    <textarea id="bulkSongsTextarea" rows="10" placeholder="#Glory be to God in the Highest - Amen. For His mercies endureth forever - Amen
+
+#Ta lo da biire, laiye at'orun, ko si o, ko si o
+
+#The Son of God is lifted up
+
+#J E S U S *2, oruko yen o lagbara
+Jesu ti Nazareti *2, o ti ran mi lowo"></textarea>
+    <div class="modal-footer">
+      <button id="bulkAddToTagBtn" class="btn btn-primary">🏷️ Add to tag</button>
+      <button id="confirmBulkBtn" class="btn btn-outline">Add All (no tag)</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Add Lyrics Modal -->
+<div id="bulkLyricsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Bulk Import Songs with Lyrics <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <p style="font-size:0.8rem;">📌 Format: <code>#Title</code> on its own line, then <code>---</code> on next line, then lyrics (any lines). Next song starts with <code>#</code> again.</p>
+    <textarea id="bulkLyricsTextarea" rows="12" placeholder="#Glory be to God
+---
+Full lyrics here...
+Line 2 of lyrics
+
+#Ta lo da biire
+---
+More lyrics...
+Second line"></textarea>
+    <div class="modal-footer">
+      <button id="bulkLyricsAddToTagBtn" class="btn btn-primary">🏷️ Add to tag</button>
+      <button id="confirmBulkLyricsBtn" class="btn btn-outline">Add All (no tag)</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Tag Selection Modal -->
+<div id="bulkTagSelectModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>Select tags for imported songs</span><div class="modal-header-right"><span id="bulkTagSelectCount" class="modal-count-chip">0 tags</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="bulkTagSearch" placeholder="🔎 Search tags..." class="modal-search">
+    <div id="bulkTagList" class="check-list"></div>
+    <div class="selected-count" id="bulkTagSelectedCount">0 tags selected</div>
+    <div class="modal-footer">
+      <button id="bulkTagConfirmBtn" class="btn btn-primary">Confirm & Import</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Modal -->
+<div id="progressModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Bulk Import Progress <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div id="progressStatus" style="margin: 0.5rem 0;">Preparing...</div>
+    <div class="progress-bar-container"><div id="progressBarFill" class="progress-bar"></div></div>
+    <div id="progressDetail" style="font-size:0.85rem; margin:0.5rem 0;"></div>
+    <div id="progressSummary" style="margin-top: 1rem; display: none;"></div>
+    <div class="modal-footer"><button id="progressCloseBtn" class="btn btn-outline" disabled>Close</button></div>
+  </div>
+</div>
+
+<!-- Duplicate Modal -->
+<div id="duplicateModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>⚠️ Similar Song Detected</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div><strong>New title:</strong> <span id="dupNewTitle"></span></div>
+    <div style="margin: 0.8rem 0;"><strong>Existing similar songs:</strong></div>
+    <div id="dupSimilarList" class="similarity-list"></div>
+    <div class="modal-footer">
+      <button id="dupAddBtn" class="btn btn-primary">Add anyway</button>
+      <button id="dupSkipBtn" class="btn btn-outline">Skip this song</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tag Filter Modal (with Inclusion and Exclusion) -->
+<div id="tagFilterModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>Filter by Tags</span><div class="modal-header-right"><span id="filterTagsCount" class="modal-count-chip">0 tags</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 1rem;">
+      <div class="toggle-switch" style="margin-bottom: 0;">
+        <span>Match type:</span>
+        <button id="toggleOrBtn" class="toggle-btn active">OR</button>
+        <button id="toggleAndBtn" class="toggle-btn">AND</button>
+      </div>
+      <button id="untaggedFilterBtn" class="btn btn-danger" style="padding: 0.3rem 1rem;">🚫 Untagged</button>
+    </div>
+    <div class="filter-section">
+      <h4>✅ Include songs with these tags:</h4>
+      <input type="text" id="filterTagSearch" placeholder="🔎 Search tags..." class="modal-search">
+      <div id="filterTagsList" class="check-list" style="max-height: 180px;"></div>
+      <div class="filter-chips" id="selectedFilterChips"></div>
+    </div>
+    <div class="filter-section">
+      <h4>🚫 Exclude songs with these tags:</h4>
+      <input type="text" id="excludeTagSearch" placeholder="🔎 Search tags to exclude..." class="modal-search">
+      <div id="excludeTagsList" class="check-list" style="max-height: 180px;"></div>
+      <div class="filter-chips" id="selectedExcludeChips"></div>
+    </div>
+    <div class="modal-footer">
+      <button id="applyFilterBtn" class="btn btn-primary">Apply</button>
+      <button id="showFilterPreviewBtn" class="btn btn-outline">Show</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Preview Filter Results Modal -->
+<div id="previewFilterModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span>Filtered Songs Preview</span><div class="modal-header-right"><span id="previewCountChip" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <div id="previewFilterSummary" class="filter-summary"></div>
+    <input type="text" id="previewSearch" placeholder="🔎 Search within results..." class="modal-search">
+    <div id="previewSongsList" class="simple-song-list"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">Close</button></div>
+  </div>
+</div>
+
+<!-- View Songs in Tag Modal -->
+<div id="viewTagSongsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="viewTagSongsTitle">Songs in Tag</span><div class="modal-header-right"><span id="viewTagSongsCount" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="viewTagSongsSearch" placeholder="🔎 Search within tag..." class="modal-search">
+    <div id="viewTagSongsList" class="simple-song-list"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">Close</button></div>
+  </div>
+</div>
+
+<!-- Add Songs to Tag Modal -->
+<div id="addSongsToTagModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header" id="addSongsToTagTitle">Add songs to tag <div class="modal-header-right"><span id="addSongsToTagCountChip" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="addSongToTagSearch" placeholder="🔎 Search songs..." class="modal-search">
+    <div id="addSongsToTagList" class="check-list"></div>
+    <div class="selected-count" id="addSongsToTagSelectedCount">0 songs selected</div>
+    <div class="modal-footer">
+      <button id="confirmAddSongsToTagBtn" class="btn btn-primary">Add to tag</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Modal -->
+<div id="summaryModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Summary <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div id="summaryMessage" style="margin: 1rem 0;"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">OK</button></div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Confirm <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div id="confirmationMessage" style="margin: 1rem 0;"></div>
+    <div class="modal-footer">
+      <button id="confirmNoBtn" class="btn btn-outline">No</button>
+      <button id="confirmYesBtn" class="btn btn-primary">Yes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Modal -->
+<div id="statsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Statistics <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <div id="statsContent" style="margin: 1rem 0; line-height: 1.8;"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">Close</button></div>
+  </div>
+</div>
+
+<!-- Mix Modals -->
+<!-- Add/Edit Mix Modal -->
+<div id="mixModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="mixModalTitle">Add Mix</span><span class="close-modal" style="cursor:pointer">✖</span></div>
+    <input type="text" id="mixTitleInput" placeholder="Mix title" class="modal-search">
+    <textarea id="mixDescInput" placeholder="Short description (optional)" class="modal-textarea" rows="2"></textarea>
+    <input type="text" id="mixKeyphrasesInput" placeholder="Keyphrases (comma separated)" class="modal-search">
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="saveMixBtn" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Songs in Mix Modal -->
+<div id="manageMixSongsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="manageMixSongsTitle">Manage Songs in Mix</span><div class="modal-header-right"><span id="manageMixSongsCount" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="manageMixSongsSearch" placeholder="🔎 Search songs..." class="modal-search">
+    <div id="manageMixSongsList" class="check-list"></div>
+    <div class="selected-count" id="manageMixSongsSelectedCount">0 songs selected</div>
+    <div class="modal-footer">
+      <button id="saveMixSongsBtn" class="btn btn-primary">Save Changes</button>
+      <button class="btn btn-outline close-modal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clone Mix Modal -->
+<div id="cloneMixModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">Clone Mix <span class="close-modal" style="cursor:pointer">✖</span></div>
+    <input type="text" id="cloneMixTitleInput" placeholder="New mix title" class="modal-search">
+    <textarea id="cloneMixDescInput" placeholder="Short description (optional)" class="modal-textarea" rows="2"></textarea>
+    <input type="text" id="cloneMixKeyphrasesInput" placeholder="Keyphrases (comma separated)" class="modal-search">
+    <div class="check-item" style="margin: 1rem 0;">
+      <input type="checkbox" id="cloneMixCopySongsCheck" checked>
+      <label for="cloneMixCopySongsCheck">Copy songs from original mix</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline close-modal">Cancel</button>
+      <button id="confirmCloneMixBtn" class="btn btn-primary">Create Clone</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Songs in Mix Modal -->
+<div id="viewMixSongsModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header"><span id="viewMixSongsTitle">Songs in Mix</span><div class="modal-header-right"><span id="viewMixSongsCountChip" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="viewMixSongsSearch" placeholder="🔎 Search within mix..." class="modal-search">
+    <div id="viewMixSongsList" class="simple-song-list"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">Close</button></div>
+  </div>
+</div>
+
+<input type="file" id="importFileInput" style="display: none;" accept=".json">
+
+<script src="script.js"></script>
+</body>
+</html>
