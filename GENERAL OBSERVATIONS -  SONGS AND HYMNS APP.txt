@@ -1,0 +1,8 @@
+### Searching - Smart search that ignores the characters like , ' " and the rest while searching
+[enhance search to include lyrics and to normalize text by removing diacritics/special characters like apostrophes and commas for comparison. The user wants a smarter search that matches regardless of punctuation]
+NOT YET APPLIED IN THE HYMNS APP (USER & ADMIN EDITIONS)
+
+### Searching and selecting (adding items)
+was the issue I experienced with the mix songs addition
+when I check items  and start to search, the stuff re-renders and so causes me to lose my previous selection
+(PLease ALWAYS Remember this selection, search and retention logic moving forward...across the app)

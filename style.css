@@ -18,7 +18,7 @@ body {
   background: #f4f7fb;
 }
 
-/* ----- TOP BAR (tighter) ----- */
+/* ----- TOP BAR ----- */
 .top-bar {
   display: flex;
   align-items: center;
@@ -59,7 +59,7 @@ body {
   width: 44px;
 }
 
-/* ----- DRAWER (unchanged) ----- */
+/* ----- DRAWER (side navigation) ----- */
 .drawer-overlay {
   position: fixed;
   top: 0;
@@ -161,7 +161,7 @@ body {
   border-top: 1px solid #e2e8f0;
 }
 
-/* ----- MAIN CONTENT (tighter) ----- */
+/* ----- MAIN CONTENT (panels) ----- */
 .panel-container {
   padding: 0 1.5rem 1rem;
 }
@@ -229,7 +229,7 @@ body {
   padding-right: 2px;
 }
 
-/* ----- COLLAPSIBLE CARDS (Songs & Mixes) ----- */
+/* Cards */
 .song-card,
 .mix-card {
   background: white;
@@ -245,7 +245,6 @@ body {
   box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.1);
 }
 
-/* Card Header (always visible) */
 .card-header {
   display: flex;
   align-items: center;
@@ -303,7 +302,6 @@ body {
   transform: rotate(90deg);
 }
 
-/* Card Details (hidden by default) */
 .card-details {
   display: none;
   margin-top: 8px;
@@ -375,7 +373,6 @@ body {
   color: #1e293b;
 }
 
-/* Tag items & Mix items (lists) */
 .tag-item,
 .mix-item {
   background: white;
@@ -411,7 +408,7 @@ body {
   margin-top: 2px;
 }
 
-/* FABs (unchanged) */
+/* FABs */
 .fab-container {
   position: fixed;
   bottom: 30px;
@@ -450,7 +447,7 @@ body {
   background: #1e2b38;
 }
 
-/* Bottom drawer (unchanged) */
+/* Bottom drawer */
 .bottom-drawer {
   position: fixed;
   bottom: 0;
@@ -526,7 +523,7 @@ body {
   margin-top: 16px;
 }
 
-/* Modals (unchanged) */
+/* Modals */
 .modal {
   display: none;
   position: fixed;
@@ -804,6 +801,13 @@ body {
   margin-bottom: 1rem;
   font-size: 0.85rem;
   color: #1e293b;
+}
+
+.assign-song-title {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.8rem;
+  padding-left: 4px;
 }
 
 @media (max-width: 600px) {
