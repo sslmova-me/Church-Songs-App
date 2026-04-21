@@ -1,3 +1,68 @@
+
+Check phone for updates too
+
+3:32 AM 4/21/2026
+having a snapshot of a mixes song arrangement used before/saving a mixes song arrangement that you like (crud)
+we can term it a playlist or singlist
+
+### Suggestions and Intentions, future additions, but I'm not yet clear on how I can go about them
+- Adding a metronome for the mixes, 
+- also adding preloaded beats you can increase/reduce the tempo
+- Users can share their mixes
+
+
+
+Lets be able to add a song to any tag or any mix it does not yet exist in in all the list of the song...Think about it...how should it really work? (DONE)
+
+3:32 AM 4/21/2026
+## Current Updates to implement (ALL DONE)
+1. Lets Add/introduce 'Most Songs' to the filter drop down of tags section
+2. For the Mixes, for the songs under the mixes, I have an intention of positioning them the way I want - i.e rearranging them the way I want. 
+So I think we can have a feature/mode where we can manually move/drag or maybe assign a particular position/order based on serial number to every song under the mix. 
+I will also like the option of 'Shuffle Songs' This automatically rearranges it itself in a random way
+and when the changes are made to the arrangement, one can save it and it remains that way even after the page is refreshed.
+
+### Pending Issues #######
+#1 still with the mixes (search and selection)
+If you don't clear out what you searched, it will reduce your selection...IT WORKS BUT ITS KIND OF INCONSITENT...KEEP WATCHING (IN PHASE)
+#2 smart search of songs with fuzzy and other logic should apply everywhere in all the songs searches, in all modals. I noticed its not applying in the Add a song to a Mix modal (FIXED)
+
+
+the corrections below is the update after split files v2, which is now supposed to be v3
+3:59 PM 4/20/2026 - New corrections to make
+fuzzy search
+We want to make the search even more smarter...for example a user could type 
+Eni to ni jen du pe se
+or
+E ni ti oni jen dupe se
+and what is in the storage is
+Eni ti o ni jen dupe se
+
+Another Example:
+what is in the storage is:
+Ta lo to o? Ta lo ju o lo? Laiye lorun kosi o
+The user might type:
+Talo to o talo ju o lo, laye l'orun kosi
+
+These things look familiar, how can we train the search to be very smart to detect these?
+
+
+
+On the songs/tags/mixes list count, beside it, we should have the count that indicates the items filtered out - it should work with the search input filtering and other filter parameters
+
+Also when we want to add a song to a tag or a mix, we should have a filter to filter out the songs based on tags - especially for mixes and also for tags too (maybe we want to add songs from other tags to the tag - That means in the tags list generated, it is going to exclude the current tag out)
+
+8:21 AM 4/20/2026 ==> effected...will be v13..its still the current file without version (as of today 9:16 AM 4/20/2026)
+1. For every search (especially for hymns - their titles, lyrics and chorus) everywhere - Building upon the search logic and parameters we already have
+We want a smarter search that ignores the characters like , ' " and the rest while searching
+[enhance search to include lyrics and to normalize text by removing diacritics/special characters like apostrophes and commas for comparison. The user wants a smarter search that matches regardless of punctuation]
+
+2. Once a language is set as the default language (yoruba or english), retain the language set throughout the app during its usage, even after the app is closed and reopened - except the user changes/set it to another language again
+
+3. In the hymns single screen, increase the spacing at the bottom   of the screen as  the  bottom bar is currently blocking the items of the screen at the bottom
+
+4. For the common  tune section, lets add a new filter chip - 'No master hymn' - filters out and shows only tunes that do not yet have their master hymn set
+
 11:26 AM 4/17/2026
 Mixes should be under tags
 OR 

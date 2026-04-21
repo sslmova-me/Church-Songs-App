@@ -549,10 +549,6 @@ body {
   animation: fadeUp 0.2s ease;
 }
 
-
-@media(max-width: 576px){
-    .modal-content { padding: 1.0rem .75rem ;}
-}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -842,65 +838,6 @@ body {
 }
 
 /* Ensure modal textareas take full width */
-.modal-textarea {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-
-/* Quick Add toggle button active state */
-.btn-outline.active-quick {
-  background: #2c3e50;
-  color: white;
-  border-color: #2c3e50;
-}
-
-/* Arrange mode list items */
-.arrange-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-.arrange-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  padding: 8px 12px;
-  border-radius: 40px;
-  border: 1px solid #e2e8f0;
-}
-.arrange-item span {
-  flex: 1;
-}
-.arrange-actions {
-  display: flex;
-  gap: 4px;
-}
-.arrange-actions .icon-btn {
-  font-size: 1.2rem;
-  padding: 2px 6px;
-}
-
-/* Quick Add modal tabs */
-.modal-tabs .modal-tab.active {
-  background: #2c3e50;
-  color: white;
-}
-
-/* Filtered badge already defined */
-.filtered-badge {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-.assign-song-title {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  margin-bottom: 0.8rem;
-  padding-left: 4px;
-}
 .modal-textarea {
   width: 100%;
   box-sizing: border-box;

@@ -6,12 +6,9 @@
   let tags = [];
   let songTags = [];
   let mixes = [];
-  let mixSongs = [];                // { mixId, songId }
+  let mixSongs = [];
 
-  // For mix ordering: we'll maintain the array order of mixSongs for each mix.
-  // Functions will respect the current order when displaying.
-
-  // Filter state (main panel)
+  // Filter state
   let currentFilterTags = [];
   let currentExcludeTags = [];
   let currentFilterMode = "OR";
@@ -27,16 +24,6 @@
   let currentBulkType = null;
   let currentBulkText = null;
   let currentAssignSongId = null;
-
-  // Quick Add state
-  let quickAddSongId = null;
-  let quickAddSelectedTags = new Set();
-  let quickAddSelectedMixes = new Set();
-  let quickAddActiveTab = 'tags';
-
-  // Arrange mode state
-  let currentArrangeMixId = null;
-  let arrangeSongList = [];
 
   const STORAGE_KEY = "SongTagAppData";
   const FUZZY_THRESHOLD = 0.75;
@@ -247,32 +234,8 @@
       document.getElementById('confirmationModal').style.display = 'flex';
     });
   }
-
-  // Enhanced closeModal: also clear search inputs and quick add toggle state
-  function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return;
-    modal.style.display = 'none';
-    // Clear any search inputs inside this modal
-    modal.querySelectorAll('input[type="text"]').forEach(input => { if (input.id.includes('Search') || input.id.includes('search')) input.value = ''; });
-    // Reset quick add toggle if present
-    const qaToggle = modal.querySelector('.btn-outline[id$="QuickAddToggle"]');
-    if (qaToggle) {
-      qaToggle.classList.remove('active-quick');
-      qaToggle.innerHTML = '➕ Quick Add';
-    }
-  }
-
-  function closeAllModals() {
-    document.querySelectorAll('.modal').forEach(m => { m.style.display = 'none'; clearModalSearchInputs(m); });
-  }
-
-  function clearModalSearchInputs(modal) {
-    modal.querySelectorAll('input[type="text"]').forEach(input => { if (input.id.includes('Search') || input.id.includes('search')) input.value = ''; });
-    const qaToggle = modal.querySelector('.btn-outline[id$="QuickAddToggle"]');
-    if (qaToggle) { qaToggle.classList.remove('active-quick'); qaToggle.innerHTML = '➕ Quick Add'; }
-  }
-
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  function closeAllModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
   function showSummary(msg) { document.getElementById('summaryMessage').innerHTML = msg; document.getElementById('summaryModal').style.display = 'flex'; }
 
   // Duplicate check
@@ -554,14 +517,7 @@
     const sort = document.getElementById('sortTags').value;
     let filtered = tags.filter(t => t.name.toLowerCase().includes(search));
     if (sort === 'az') filtered.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sort === 'za') filtered.sort((a, b) => b.name.localeCompare(a.name));
-    else if (sort === 'mostSongs') {
-      filtered.sort((a, b) => {
-        const countA = songTags.filter(st => st.tagId === a.id).length;
-        const countB = songTags.filter(st => st.tagId === b.id).length;
-        return countB - countA || a.name.localeCompare(b.name);
-      });
-    }
+    else filtered.sort((a, b) => b.name.localeCompare(a.name));
     const container = document.getElementById('tagsContainer');
     if (!filtered.length) { container.innerHTML = '<div style="padding:1rem;">No tags found</div>'; }
     else {
@@ -727,7 +683,24 @@
     saveData(); renderMixes();
   }
 
-  // Helper: filter songs by tag filter (include/exclude)
+  // Tag & Mix modals
+  function openViewTagSongsModal(tag) {
+    document.getElementById('viewTagSongsTitle').innerHTML = `Songs in “${escapeHtml(tag.name)}”`;
+    const search = document.getElementById('viewTagSongsSearch');
+    const cont = document.getElementById('viewTagSongsList');
+    const countSpan = document.getElementById('viewTagSongsCount');
+    function render() {
+      const q = search.value.toLowerCase();
+      const ids = songTags.filter(st=>st.tagId===tag.id).map(st=>st.songId);
+      const filtered = songs.filter(s=>ids.includes(s.id) && s.title.toLowerCase().includes(q));
+      cont.innerHTML = filtered.map(s=>`<div class="simple-song-item">🎵 ${escapeHtml(s.title)}</div>`).join('');
+      countSpan.innerText = filtered.length;
+    }
+    render();
+    search.oninput = render;
+    document.getElementById('viewTagSongsModal').style.display='flex';
+  }
+
   function filterSongsByTagFilter(songList, includeIds, excludeIds, mode) {
     return songList.filter(song => {
       const songTagIds = songTags.filter(st=>st.songId===song.id).map(st=>st.tagId);
@@ -737,7 +710,6 @@
     });
   }
 
-  // ========== ADD SONGS TO TAG MODAL ==========
   function openAddSongsToTagModal(tagId) {
     const tag = tags.find(t => t.id === tagId); if(!tag) return;
     document.getElementById('addSongsToTagTitle').innerHTML = `Add songs to “${escapeHtml(tag.name)}” <div class="modal-header-right"><span id="addSongsToTagCountChip" class="modal-count-chip">0</span><span class="close-modal" style="cursor:pointer">✖</span></div>`;
@@ -745,7 +717,6 @@
     const search = document.getElementById('addSongToTagSearch');
     const selectedIds = new Set(songTags.filter(st=>st.tagId===tagId).map(st=>st.songId));
 
-    // Filter panel state
     let filterInclude = [], filterExclude = [], filterMode = 'OR';
     let filterPanelVisible = false;
     const availableTags = tags.filter(t => t.id !== tagId);
@@ -758,16 +729,6 @@
     const clearBtn = document.getElementById('addSongsToTagClearFilterBtn');
     const chipsDiv = document.getElementById('addSongsToTagFilterChips');
     const filterCountSpan = document.getElementById('addSongsToTagFilterCount');
-
-    // Quick Add toggle
-    const qaToggle = document.getElementById('addSongsToTagQuickAddToggle');
-    let quickAddEnabled = false;
-    qaToggle.onclick = () => {
-      quickAddEnabled = !quickAddEnabled;
-      qaToggle.classList.toggle('active-quick', quickAddEnabled);
-      qaToggle.innerHTML = quickAddEnabled ? '✅ Quick Add ON' : '➕ Quick Add';
-      renderSongList();
-    };
 
     function updateFilterCount() { filterCountSpan.innerText = filterInclude.length + filterExclude.length; }
     function renderIncludeList() {
@@ -800,54 +761,30 @@
 
     function getFilteredSongs() {
       let baseSongs = songs.filter(s => !selectedIds.has(s.id));
-      const searchTerm = search.value;
-      let textFiltered = baseSongs.filter(s => fuzzyMatch(s.title, searchTerm) || fuzzyMatch(s.lyrics || '', searchTerm));
+      let textFiltered = baseSongs.filter(s => s.title.toLowerCase().includes(search.value.toLowerCase()));
       return filterSongsByTagFilter(textFiltered, filterInclude, filterExclude, filterMode);
     }
-
     function renderSongList() {
       const filtered = getFilteredSongs();
-      let html = '';
-      filtered.forEach(song => {
-        const checked = selectedIds.has(song.id) ? 'checked' : '';
-        html += `<div class="check-item">`;
-        if (quickAddEnabled) {
-          html += `<button class="icon-btn quick-add-song-btn" data-song-id="${song.id}" title="Quick Add to Tag/Mix" style="margin-right:4px;">➕</button>`;
-        }
-        html += `<input type="checkbox" value="${song.id}" id="asong_${song.id}" ${checked}><label for="asong_${song.id}">🎵 ${escapeHtml(song.title)}</label></div>`;
-      });
-      cont.innerHTML = html;
+      cont.innerHTML = filtered.map(s=>`<div class="check-item"><input type="checkbox" value="${s.id}" id="asong_${s.id}"><label for="asong_${s.id}">🎵 ${escapeHtml(s.title)}</label></div>`).join('');
       document.getElementById('addSongsToTagCountChip').innerText = filtered.length;
       updateSelectedCount();
-      if (quickAddEnabled) {
-        cont.querySelectorAll('.quick-add-song-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const songId = btn.dataset.songId;
-            openQuickAddModal(songId);
-          });
-        });
-      }
     }
-
     function updateSelectedCount() {
       const sel = document.querySelectorAll('#addSongsToTagList input:checked').length;
       document.getElementById('addSongsToTagSelectedCount').innerText = `${sel} song(s) selected`;
     }
-
     document.getElementById('addSongsToTagFilterToggle').onclick = () => {
       filterPanelVisible = !filterPanelVisible;
       document.getElementById('addSongsToTagFilterPanel').style.display = filterPanelVisible ? 'block' : 'none';
       if (filterPanelVisible) { renderIncludeList(); renderExcludeList(); updateChips(); }
     };
-
     cont.addEventListener('change', e => {
       if (e.target.type === 'checkbox') {
         if (e.target.checked) selectedIds.add(e.target.value); else selectedIds.delete(e.target.value);
         updateSelectedCount();
       }
     });
-
     search.oninput = renderSongList;
     renderSongList();
 
@@ -859,356 +796,7 @@
       closeModal('addSongsToTagModal');
       showSummary(`Added ${added} song(s).`);
     };
-
     document.getElementById('addSongsToTagModal').style.display = 'flex';
-  }
-
-  // ========== MANAGE MIX SONGS MODAL ==========
-  function openManageMixSongsModal(mixId) {
-    const mix = mixes.find(m => m.id === mixId); if (!mix) return;
-    document.getElementById('manageMixSongsTitle').innerHTML = `Manage songs in “${escapeHtml(mix.title)}”`;
-    const cont = document.getElementById('manageMixSongsList');
-    const search = document.getElementById('manageMixSongsSearch');
-    const selectedIds = new Set(mixSongs.filter(ms=>ms.mixId===mixId).map(ms=>ms.songId));
-
-    let filterInclude = [], filterExclude = [], filterMode = 'OR';
-    let filterPanelVisible = false;
-    const includeCont = document.getElementById('manageMixIncludeList');
-    const excludeCont = document.getElementById('manageMixExcludeList');
-    const includeSearch = document.getElementById('manageMixIncludeSearch');
-    const excludeSearch = document.getElementById('manageMixExcludeSearch');
-    const orBtn = document.getElementById('manageMixOrBtn');
-    const andBtn = document.getElementById('manageMixAndBtn');
-    const clearBtn = document.getElementById('manageMixClearFilterBtn');
-    const chipsDiv = document.getElementById('manageMixFilterChips');
-    const filterCountSpan = document.getElementById('manageMixSongsFilterCount');
-
-    const qaToggle = document.getElementById('manageMixQuickAddToggle');
-    let quickAddEnabled = false;
-    qaToggle.onclick = () => {
-      quickAddEnabled = !quickAddEnabled;
-      qaToggle.classList.toggle('active-quick', quickAddEnabled);
-      qaToggle.innerHTML = quickAddEnabled ? '✅ Quick Add ON' : '➕ Quick Add';
-      renderSongList();
-    };
-
-    function updateFilterCount() { filterCountSpan.innerText = filterInclude.length + filterExclude.length; }
-    function renderIncludeList() {
-      const q = includeSearch.value.toLowerCase();
-      const filtered = tags.filter(t=>t.name.toLowerCase().includes(q));
-      includeCont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="mix_inc_${t.id}" ${filterInclude.includes(t.id)?'checked':''}><label for="mix_inc_${t.id}">🏷️ ${escapeHtml(t.name)}</label></div>`).join('');
-    }
-    function renderExcludeList() {
-      const q = excludeSearch.value.toLowerCase();
-      const filtered = tags.filter(t=>t.name.toLowerCase().includes(q));
-      excludeCont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="mix_exc_${t.id}" ${filterExclude.includes(t.id)?'checked':''}><label for="mix_exc_${t.id}">🚫 ${escapeHtml(t.name)}</label></div>`).join('');
-    }
-    function updateChips() {
-      const incChips = filterInclude.map(id=>{ const t=tags.find(t=>t.id===id); return t?`<span class="chip">🏷️ ${escapeHtml(t.name)}</span>`:''; }).join('');
-      const excChips = filterExclude.map(id=>{ const t=tags.find(t=>t.id===id); return t?`<span class="chip" style="background:#fee2e2;color:#b91c1c;">🚫 ${escapeHtml(t.name)}</span>`:''; }).join('');
-      chipsDiv.innerHTML = incChips + excChips;
-      updateFilterCount();
-    }
-    function collectChecked() {
-      filterInclude = Array.from(document.querySelectorAll('#manageMixIncludeList input:checked')).map(cb=>cb.value);
-      filterExclude = Array.from(document.querySelectorAll('#manageMixExcludeList input:checked')).map(cb=>cb.value);
-    }
-    includeCont.addEventListener('change', ()=>{ collectChecked(); updateChips(); renderSongList(); });
-    excludeCont.addEventListener('change', ()=>{ collectChecked(); updateChips(); renderSongList(); });
-    includeSearch.oninput = renderIncludeList;
-    excludeSearch.oninput = renderExcludeList;
-    orBtn.onclick = ()=>{ filterMode='OR'; orBtn.classList.add('active'); andBtn.classList.remove('active'); renderSongList(); };
-    andBtn.onclick = ()=>{ filterMode='AND'; andBtn.classList.add('active'); orBtn.classList.remove('active'); renderSongList(); };
-    clearBtn.onclick = ()=>{ filterInclude=[]; filterExclude=[]; renderIncludeList(); renderExcludeList(); updateChips(); renderSongList(); };
-
-    function getFilteredSongs() {
-      const searchTerm = search.value;
-      let textFiltered = songs.filter(s => fuzzyMatch(s.title, searchTerm) || fuzzyMatch(s.lyrics || '', searchTerm));
-      return filterSongsByTagFilter(textFiltered, filterInclude, filterExclude, filterMode);
-    }
-
-    function renderSongList() {
-      const filtered = getFilteredSongs();
-      let html = '';
-      filtered.forEach(song => {
-        const checked = selectedIds.has(song.id) ? 'checked' : '';
-        html += `<div class="check-item">`;
-        if (quickAddEnabled) {
-          html += `<button class="icon-btn quick-add-song-btn" data-song-id="${song.id}" title="Quick Add to Tag/Mix" style="margin-right:4px;">➕</button>`;
-        }
-        html += `<input type="checkbox" value="${song.id}" id="msong_${song.id}" ${checked}><label for="msong_${song.id}">🎵 ${escapeHtml(song.title)}</label></div>`;
-      });
-      cont.innerHTML = html;
-      document.getElementById('manageMixSongsCount').innerText = filtered.length;
-      updateSelectedCount();
-      if (quickAddEnabled) {
-        cont.querySelectorAll('.quick-add-song-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const songId = btn.dataset.songId;
-            openQuickAddModal(songId);
-          });
-        });
-      }
-    }
-
-    function updateSelectedCount() {
-      const sel = document.querySelectorAll('#manageMixSongsList input:checked').length;
-      document.getElementById('manageMixSongsSelectedCount').innerText = `${sel} song(s) selected`;
-    }
-
-    document.getElementById('manageMixSongsFilterToggle').onclick = () => {
-      filterPanelVisible = !filterPanelVisible;
-      document.getElementById('manageMixSongsFilterPanel').style.display = filterPanelVisible ? 'block' : 'none';
-      if (filterPanelVisible) { renderIncludeList(); renderExcludeList(); updateChips(); }
-    };
-
-    cont.addEventListener('change', e => {
-      if (e.target.type === 'checkbox') {
-        if (e.target.checked) selectedIds.add(e.target.value); else selectedIds.delete(e.target.value);
-        updateSelectedCount();
-      }
-    });
-
-    search.oninput = renderSongList;
-    renderSongList();
-
-    document.getElementById('saveMixSongsBtn').onclick = () => {
-      mixSongs = mixSongs.filter(ms => ms.mixId !== mixId);
-      for (const sid of selectedIds) mixSongs.push({ mixId, songId: sid });
-      saveData(); renderMixes(); closeModal('manageMixSongsModal');
-      showSummary(`Mix updated with ${selectedIds.size} songs.`);
-    };
-
-    document.getElementById('manageMixSongsModal').style.display = 'flex';
-  }
-
-  // ========== VIEW MIX SONGS MODAL (with Arrange Mode) ==========
-  function openViewMixSongsModal(mix) {
-    currentArrangeMixId = mix.id;
-    document.getElementById('viewMixSongsTitle').innerHTML = `Songs in “${escapeHtml(mix.title)}”`;
-    const search = document.getElementById('viewMixSongsSearch');
-    const normalCont = document.getElementById('viewMixSongsListNormal');
-    const arrangeCont = document.getElementById('arrangeSongList');
-    const countSpan = document.getElementById('viewMixSongsCountChip');
-    const normalModeBtn = document.getElementById('viewMixNormalModeBtn');
-    const arrangeModeBtn = document.getElementById('viewMixArrangeModeBtn');
-    const normalFooter = document.getElementById('viewMixNormalFooter');
-    const arrangePanel = document.getElementById('viewMixSongsListArrange');
-
-    let mode = 'normal'; // 'normal' or 'arrange'
-    let currentOrder = mixSongs.filter(ms=>ms.mixId===mix.id).map(ms=>ms.songId); // preserve order
-
-    function renderNormal() {
-      const q = search.value.toLowerCase();
-      const orderedSongs = currentOrder.map(id => songs.find(s=>s.id===id)).filter(s=>s && s.title.toLowerCase().includes(q));
-      normalCont.innerHTML = orderedSongs.map(s => `<div class="simple-song-item">🎵 ${escapeHtml(s.title)}</div>`).join('');
-      countSpan.innerText = orderedSongs.length;
-    }
-
-    function renderArrange() {
-      const q = search.value.toLowerCase();
-      const orderedSongs = currentOrder.map(id => songs.find(s=>s.id===id)).filter(s=>s && s.title.toLowerCase().includes(q));
-      arrangeSongList = orderedSongs.map(s => s.id); // sync
-      let html = '';
-      orderedSongs.forEach((song, index) => {
-        html += `<div class="arrange-item" data-song-id="${song.id}">
-          <span>🎵 ${escapeHtml(song.title)}</span>
-          <div class="arrange-actions">
-            <button class="icon-btn move-up-btn" ${index === 0 ? 'disabled' : ''} data-index="${index}">⬆️</button>
-            <button class="icon-btn move-down-btn" ${index === orderedSongs.length-1 ? 'disabled' : ''} data-index="${index}">⬇️</button>
-          </div>
-        </div>`;
-      });
-      arrangeCont.innerHTML = html;
-      countSpan.innerText = orderedSongs.length;
-      // Attach move events
-      arrangeCont.querySelectorAll('.move-up-btn').forEach(btn => {
-        btn.addEventListener('click', () => moveArrangeItem(parseInt(btn.dataset.index), -1));
-      });
-      arrangeCont.querySelectorAll('.move-down-btn').forEach(btn => {
-        btn.addEventListener('click', () => moveArrangeItem(parseInt(btn.dataset.index), 1));
-      });
-    }
-
-    function moveArrangeItem(index, direction) {
-      const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= arrangeSongList.length) return;
-      [arrangeSongList[index], arrangeSongList[newIndex]] = [arrangeSongList[newIndex], arrangeSongList[index]];
-      currentOrder = [...arrangeSongList];
-      renderArrange();
-    }
-
-    function switchMode(newMode) {
-      mode = newMode;
-      if (mode === 'normal') {
-        normalCont.style.display = 'block';
-        arrangePanel.style.display = 'none';
-        normalFooter.style.display = 'flex';
-        normalModeBtn.classList.add('active');
-        arrangeModeBtn.classList.remove('active');
-        renderNormal();
-      } else {
-        normalCont.style.display = 'none';
-        arrangePanel.style.display = 'block';
-        normalFooter.style.display = 'none';
-        arrangeModeBtn.classList.add('active');
-        normalModeBtn.classList.remove('active');
-        renderArrange();
-      }
-    }
-
-    normalModeBtn.onclick = () => switchMode('normal');
-    arrangeModeBtn.onclick = () => switchMode('arrange');
-
-    document.getElementById('shuffleMixSongsBtn').onclick = () => {
-      // Fisher-Yates shuffle
-      for (let i = arrangeSongList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arrangeSongList[i], arrangeSongList[j]] = [arrangeSongList[j], arrangeSongList[i]];
-      }
-      currentOrder = [...arrangeSongList];
-      renderArrange();
-    };
-
-    document.getElementById('saveMixOrderBtn').onclick = () => {
-      // Update mixSongs with new order
-      mixSongs = mixSongs.filter(ms => ms.mixId !== mix.id);
-      currentOrder.forEach(songId => mixSongs.push({ mixId: mix.id, songId }));
-      saveData();
-      renderMixes();
-      closeModal('viewMixSongsModal');
-      showSummary('Order saved.');
-    };
-
-    search.oninput = () => {
-      if (mode === 'normal') renderNormal(); else renderArrange();
-    };
-
-    switchMode('normal');
-    document.getElementById('viewMixSongsModal').style.display = 'flex';
-  }
-
-  // ========== QUICK ADD MINI-MODAL ==========
-  function openQuickAddModal(songId) {
-    const song = songs.find(s => s.id === songId);
-    if (!song) return;
-    quickAddSongId = songId;
-    quickAddSelectedTags.clear();
-    quickAddSelectedMixes.clear();
-    quickAddActiveTab = 'tags';
-
-    document.getElementById('quickAddSongTitle').innerText = song.title;
-    document.getElementById('quickAddTagsTab').classList.add('active');
-    document.getElementById('quickAddMixesTab').classList.remove('active');
-    document.getElementById('quickAddTagsPanel').style.display = 'block';
-    document.getElementById('quickAddMixesPanel').style.display = 'none';
-
-    renderQuickAddTags();
-    renderQuickAddMixes();
-    updateQuickAddSelectedCount();
-
-    document.getElementById('quickAddTagsTab').onclick = () => {
-      quickAddActiveTab = 'tags';
-      document.getElementById('quickAddTagsTab').classList.add('active');
-      document.getElementById('quickAddMixesTab').classList.remove('active');
-      document.getElementById('quickAddTagsPanel').style.display = 'block';
-      document.getElementById('quickAddMixesPanel').style.display = 'none';
-    };
-    document.getElementById('quickAddMixesTab').onclick = () => {
-      quickAddActiveTab = 'mixes';
-      document.getElementById('quickAddMixesTab').classList.add('active');
-      document.getElementById('quickAddTagsTab').classList.remove('active');
-      document.getElementById('quickAddMixesPanel').style.display = 'block';
-      document.getElementById('quickAddTagsPanel').style.display = 'none';
-    };
-
-    document.getElementById('quickAddTagSearch').oninput = renderQuickAddTags;
-    document.getElementById('quickAddMixSearch').oninput = renderQuickAddMixes;
-
-    document.getElementById('confirmQuickAddBtn').onclick = () => {
-      let added = 0;
-      // Add to selected tags
-      for (const tagId of quickAddSelectedTags) {
-        if (!songTags.some(st => st.songId === quickAddSongId && st.tagId === tagId)) {
-          songTags.push({ songId: quickAddSongId, tagId });
-          added++;
-        }
-      }
-      // Add to selected mixes
-      for (const mixId of quickAddSelectedMixes) {
-        if (!mixSongs.some(ms => ms.mixId === mixId && ms.songId === quickAddSongId)) {
-          mixSongs.push({ mixId, songId: quickAddSongId });
-          added++;
-        }
-      }
-      if (added) {
-        saveData();
-        // Refresh any open modals that might be showing song lists
-        if (document.getElementById('addSongsToTagModal').style.display === 'flex') {
-          // re-render that modal's list
-          const tagModalTagId = editingTagId; // not ideal, but we can trigger a refresh by calling the open function again?
-        }
-        refreshUI();
-      }
-      closeModal('quickAddModal');
-      showSummary(`Added to ${added} items.`);
-    };
-
-    document.getElementById('quickAddModal').style.display = 'flex';
-  }
-
-  function renderQuickAddTags() {
-    const search = document.getElementById('quickAddTagSearch').value;
-    const cont = document.getElementById('quickAddTagsList');
-    const availableTags = tags.filter(t => !songTags.some(st => st.songId === quickAddSongId && st.tagId === t.id));
-    const filtered = availableTags.filter(t => fuzzyMatch(t.name, search));
-    cont.innerHTML = filtered.map(t => {
-      const checked = quickAddSelectedTags.has(t.id) ? 'checked' : '';
-      return `<div class="check-item"><input type="checkbox" value="${t.id}" id="qtag_${t.id}" ${checked}><label for="qtag_${t.id}">🏷️ ${escapeHtml(t.name)}</label></div>`;
-    }).join('');
-    cont.querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
-      if (cb.checked) quickAddSelectedTags.add(cb.value); else quickAddSelectedTags.delete(cb.value);
-      updateQuickAddSelectedCount();
-    }));
-  }
-
-  function renderQuickAddMixes() {
-    const search = document.getElementById('quickAddMixSearch').value;
-    const cont = document.getElementById('quickAddMixesList');
-    const availableMixes = mixes.filter(m => !mixSongs.some(ms => ms.mixId === m.id && ms.songId === quickAddSongId));
-    const filtered = availableMixes.filter(m => fuzzyMatch(m.title, search) || fuzzyMatch(m.keyphrases||'', search));
-    cont.innerHTML = filtered.map(m => {
-      const checked = quickAddSelectedMixes.has(m.id) ? 'checked' : '';
-      return `<div class="check-item"><input type="checkbox" value="${m.id}" id="qmix_${m.id}" ${checked}><label for="qmix_${m.id}">🎚️ ${escapeHtml(m.title)}</label></div>`;
-    }).join('');
-    cont.querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
-      if (cb.checked) quickAddSelectedMixes.add(cb.value); else quickAddSelectedMixes.delete(cb.value);
-      updateQuickAddSelectedCount();
-    }));
-  }
-
-  function updateQuickAddSelectedCount() {
-    const total = quickAddSelectedTags.size + quickAddSelectedMixes.size;
-    document.getElementById('quickAddSelectedCount').innerText = `${total} selected`;
-  }
-
-  // ========== OTHER MODALS (unchanged but using fuzzyMatch) ==========
-  function openViewTagSongsModal(tag) {
-    document.getElementById('viewTagSongsTitle').innerHTML = `Songs in “${escapeHtml(tag.name)}”`;
-    const search = document.getElementById('viewTagSongsSearch');
-    const cont = document.getElementById('viewTagSongsList');
-    const countSpan = document.getElementById('viewTagSongsCount');
-    function render() {
-      const q = search.value;
-      const ids = songTags.filter(st=>st.tagId===tag.id).map(st=>st.songId);
-      const filtered = songs.filter(s=>ids.includes(s.id) && (fuzzyMatch(s.title, q) || fuzzyMatch(s.lyrics||'', q)));
-      cont.innerHTML = filtered.map(s=>`<div class="simple-song-item">🎵 ${escapeHtml(s.title)}</div>`).join('');
-      countSpan.innerText = filtered.length;
-    }
-    render();
-    search.oninput = render;
-    document.getElementById('viewTagSongsModal').style.display='flex';
   }
 
   function openEditTagModal(id) {
@@ -1228,9 +816,9 @@
     renderEditTagSongsList();
   }
   function renderEditTagSongsList() {
-    const search = document.getElementById('editTagSongsSearch').value;
+    const search = document.getElementById('editTagSongsSearch').value.toLowerCase();
     const songIdsInTag = songTags.filter(st=>st.tagId===editingTagId).map(st=>st.songId);
-    const songsInTag = songs.filter(s=>songIdsInTag.includes(s.id) && (fuzzyMatch(s.title, search) || fuzzyMatch(s.lyrics||'', search)));
+    const songsInTag = songs.filter(s=>songIdsInTag.includes(s.id) && s.title.toLowerCase().includes(search));
     const cont = document.getElementById('editTagSongsList');
     cont.innerHTML = songsInTag.map(s=>`<div class="check-item"><input type="checkbox" value="${s.id}" id="etsong_${s.id}" ${tagSongsToRemove.has(s.id)?'':'checked'}><label for="etsong_${s.id}">🎵 ${escapeHtml(s.title)}</label></div>`).join('');
     const remaining = songsInTag.filter(s=>!tagSongsToRemove.has(s.id)).length;
@@ -1272,8 +860,8 @@
     modalContent.insertBefore(titleElement, document.getElementById('assignTagSearch'));
     const selectedIds = new Set(songTags.filter(st => st.songId === songId).map(st => st.tagId));
     function render() {
-      const search = searchInput.value;
-      const filteredTags = tags.filter(t => fuzzyMatch(t.name, search));
+      const search = searchInput.value.toLowerCase();
+      const filteredTags = tags.filter(t => t.name.toLowerCase().includes(search));
       container.innerHTML = filteredTags.map(tag => {
         const checked = selectedIds.has(tag.id) ? 'checked' : '';
         return `<div class="check-item">
@@ -1299,7 +887,7 @@
     document.getElementById('assignTagsModal').style.display = 'flex';
   }
 
-  // Mix CRUD (add, edit, clone) unchanged except fuzzy search in modals.
+  // Mix CRUD
   function openAddMixModal() {
     editingMixId=null;
     document.getElementById('mixModalTitle').innerText='Add Mix';
@@ -1336,6 +924,106 @@
       showSummary(`Mix cloned.`);
     };
     document.getElementById('cloneMixModal').style.display='flex';
+  }
+  function openManageMixSongsModal(mixId) {
+    const mix = mixes.find(m => m.id === mixId); if (!mix) return;
+    document.getElementById('manageMixSongsTitle').innerHTML = `Manage songs in “${escapeHtml(mix.title)}”`;
+    const cont = document.getElementById('manageMixSongsList');
+    const search = document.getElementById('manageMixSongsSearch');
+    const selectedIds = new Set(mixSongs.filter(ms=>ms.mixId===mixId).map(ms=>ms.songId));
+
+    let filterInclude = [], filterExclude = [], filterMode = 'OR';
+    let filterPanelVisible = false;
+    const includeCont = document.getElementById('manageMixIncludeList');
+    const excludeCont = document.getElementById('manageMixExcludeList');
+    const includeSearch = document.getElementById('manageMixIncludeSearch');
+    const excludeSearch = document.getElementById('manageMixExcludeSearch');
+    const orBtn = document.getElementById('manageMixOrBtn');
+    const andBtn = document.getElementById('manageMixAndBtn');
+    const clearBtn = document.getElementById('manageMixClearFilterBtn');
+    const chipsDiv = document.getElementById('manageMixFilterChips');
+    const filterCountSpan = document.getElementById('manageMixSongsFilterCount');
+
+    function updateFilterCount() { filterCountSpan.innerText = filterInclude.length + filterExclude.length; }
+    function renderIncludeList() {
+      const q = includeSearch.value.toLowerCase();
+      const filtered = tags.filter(t=>t.name.toLowerCase().includes(q));
+      includeCont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="mix_inc_${t.id}" ${filterInclude.includes(t.id)?'checked':''}><label for="mix_inc_${t.id}">🏷️ ${escapeHtml(t.name)}</label></div>`).join('');
+    }
+    function renderExcludeList() {
+      const q = excludeSearch.value.toLowerCase();
+      const filtered = tags.filter(t=>t.name.toLowerCase().includes(q));
+      excludeCont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="mix_exc_${t.id}" ${filterExclude.includes(t.id)?'checked':''}><label for="mix_exc_${t.id}">🚫 ${escapeHtml(t.name)}</label></div>`).join('');
+    }
+    function updateChips() {
+      const incChips = filterInclude.map(id=>{ const t=tags.find(t=>t.id===id); return t?`<span class="chip">🏷️ ${escapeHtml(t.name)}</span>`:''; }).join('');
+      const excChips = filterExclude.map(id=>{ const t=tags.find(t=>t.id===id); return t?`<span class="chip" style="background:#fee2e2;color:#b91c1c;">🚫 ${escapeHtml(t.name)}</span>`:''; }).join('');
+      chipsDiv.innerHTML = incChips + excChips;
+      updateFilterCount();
+    }
+    function collectChecked() {
+      filterInclude = Array.from(document.querySelectorAll('#manageMixIncludeList input:checked')).map(cb=>cb.value);
+      filterExclude = Array.from(document.querySelectorAll('#manageMixExcludeList input:checked')).map(cb=>cb.value);
+    }
+    includeCont.addEventListener('change', ()=>{ collectChecked(); updateChips(); renderSongList(); });
+    excludeCont.addEventListener('change', ()=>{ collectChecked(); updateChips(); renderSongList(); });
+    includeSearch.oninput = renderIncludeList;
+    excludeSearch.oninput = renderExcludeList;
+    orBtn.onclick = ()=>{ filterMode='OR'; orBtn.classList.add('active'); andBtn.classList.remove('active'); renderSongList(); };
+    andBtn.onclick = ()=>{ filterMode='AND'; andBtn.classList.add('active'); orBtn.classList.remove('active'); renderSongList(); };
+    clearBtn.onclick = ()=>{ filterInclude=[]; filterExclude=[]; renderIncludeList(); renderExcludeList(); updateChips(); renderSongList(); };
+
+    function getFilteredSongs() {
+      let textFiltered = songs.filter(s => s.title.toLowerCase().includes(search.value.toLowerCase()));
+      return filterSongsByTagFilter(textFiltered, filterInclude, filterExclude, filterMode);
+    }
+    function renderSongList() {
+      const filtered = getFilteredSongs();
+      cont.innerHTML = filtered.map(s=>`<div class="check-item"><input type="checkbox" value="${s.id}" id="msong_${s.id}" ${selectedIds.has(s.id)?'checked':''}><label for="msong_${s.id}">🎵 ${escapeHtml(s.title)}</label></div>`).join('');
+      document.getElementById('manageMixSongsCount').innerText = filtered.length;
+      updateSelectedCount();
+    }
+    function updateSelectedCount() {
+      const sel = document.querySelectorAll('#manageMixSongsList input:checked').length;
+      document.getElementById('manageMixSongsSelectedCount').innerText = `${sel} song(s) selected`;
+    }
+    document.getElementById('manageMixSongsFilterToggle').onclick = () => {
+      filterPanelVisible = !filterPanelVisible;
+      document.getElementById('manageMixSongsFilterPanel').style.display = filterPanelVisible ? 'block' : 'none';
+      if (filterPanelVisible) { renderIncludeList(); renderExcludeList(); updateChips(); }
+    };
+    cont.addEventListener('change', e => {
+      if (e.target.type === 'checkbox') {
+        if (e.target.checked) selectedIds.add(e.target.value); else selectedIds.delete(e.target.value);
+        updateSelectedCount();
+      }
+    });
+    search.oninput = renderSongList;
+    renderSongList();
+
+    document.getElementById('saveMixSongsBtn').onclick = () => {
+      mixSongs = mixSongs.filter(ms => ms.mixId !== mixId);
+      for (const sid of selectedIds) mixSongs.push({ mixId, songId: sid });
+      saveData(); renderMixes(); closeModal('manageMixSongsModal');
+      showSummary(`Mix updated with ${selectedIds.size} songs.`);
+    };
+    document.getElementById('manageMixSongsModal').style.display = 'flex';
+  }
+  function openViewMixSongsModal(mix) {
+    document.getElementById('viewMixSongsTitle').innerHTML=`Songs in “${escapeHtml(mix.title)}”`;
+    const search=document.getElementById('viewMixSongsSearch');
+    const cont=document.getElementById('viewMixSongsList');
+    const countSpan=document.getElementById('viewMixSongsCountChip');
+    function render(){
+      const q=search.value.toLowerCase();
+      const ids=mixSongs.filter(ms=>ms.mixId===mix.id).map(ms=>ms.songId);
+      const filtered=songs.filter(s=>ids.includes(s.id)&&s.title.toLowerCase().includes(q));
+      cont.innerHTML=filtered.map(s=>`<div class="simple-song-item">🎵 ${escapeHtml(s.title)}</div>`).join('');
+      countSpan.innerText=filtered.length;
+    }
+    render();
+    search.oninput=render;
+    document.getElementById('viewMixSongsModal').style.display='flex';
   }
 
   function showStats() {

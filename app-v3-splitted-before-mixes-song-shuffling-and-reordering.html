@@ -58,7 +58,6 @@
         <select id="sortTags" class="sort-select">
           <option value="az">A → Z</option>
           <option value="za">Z → A</option>
-          <option value="mostSongs">Most Songs</option>
         </select>
       </div>
       <input type="text" id="tagSearch" class="search-full" placeholder="🔍 Filter tags...">
@@ -141,7 +140,7 @@
   </div>
 </div>
 
-<!-- Lyrics View Modal -->
+<!-- Lyrics View Modal (kept for backward compatibility) -->
 <div id="lyricsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header"><span>📄 Full Lyrics</span><span class="close-modal" style="cursor:pointer">✖</span></div>
@@ -343,17 +342,13 @@ Second line"></textarea>
 <div id="addSongsToTagModal" class="modal">
   <div class="modal-content">
     <div class="modal-header" id="addSongsToTagTitle">Add songs to tag <div class="modal-header-right"><span id="addSongsToTagCountChip" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-      <input type="text" id="addSongToTagSearch" placeholder="🔎 Search songs..." class="modal-search" style="margin:0; flex:1;">
-      <button class="btn btn-outline" id="addSongsToTagQuickAddToggle" style="margin-left:8px; padding:0.3rem 1rem;" title="Enable Quick Add">➕ Quick Add</button>
-    </div>
-    <!-- Tag filter toggle and panel (collapsible) -->
+    <input type="text" id="addSongToTagSearch" placeholder="🔎 Search songs..." class="modal-search">
+    <!-- Tag filter toggle and panel -->
     <div style="margin-bottom: 0.5rem;">
       <button class="btn btn-outline" id="addSongsToTagFilterToggle" style="padding: 0.3rem 1rem;">🏷️ Filter by tags</button>
       <span id="addSongsToTagFilterCount" class="modal-count-chip" style="margin-left: 8px;">0</span>
     </div>
     <div id="addSongsToTagFilterPanel" style="display: none; background: #f8fafc; border-radius: 20px; padding: 1rem; margin-bottom: 1rem;">
-      <!-- (same filter panel as before) -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
         <div class="toggle-switch" style="margin: 0;">
           <button id="addSongsToTagOrBtn" class="toggle-btn active">OR</button>
@@ -386,17 +381,13 @@ Second line"></textarea>
 <div id="manageMixSongsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header"><span id="manageMixSongsTitle">Manage Songs in Mix</span><div class="modal-header-right"><span id="manageMixSongsCount" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-      <input type="text" id="manageMixSongsSearch" placeholder="🔎 Search songs..." class="modal-search" style="margin:0; flex:1;">
-      <button class="btn btn-outline" id="manageMixQuickAddToggle" style="margin-left:8px; padding:0.3rem 1rem;" title="Enable Quick Add">➕ Quick Add</button>
-    </div>
+    <input type="text" id="manageMixSongsSearch" placeholder="🔎 Search songs..." class="modal-search">
     <!-- Tag filter toggle and panel -->
     <div style="margin-bottom: 0.5rem;">
       <button class="btn btn-outline" id="manageMixSongsFilterToggle" style="padding: 0.3rem 1rem;">🏷️ Filter by tags</button>
       <span id="manageMixSongsFilterCount" class="modal-count-chip" style="margin-left: 8px;">0</span>
     </div>
     <div id="manageMixSongsFilterPanel" style="display: none; background: #f8fafc; border-radius: 20px; padding: 1rem; margin-bottom: 1rem;">
-      <!-- (same filter panel) -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
         <div class="toggle-switch" style="margin: 0;">
           <button id="manageMixOrBtn" class="toggle-btn active">OR</button>
@@ -443,57 +434,13 @@ Second line"></textarea>
   </div>
 </div>
 
-<!-- View Songs in Mix Modal (with Arrange Mode) -->
+<!-- View Songs in Mix Modal -->
 <div id="viewMixSongsModal" class="modal">
   <div class="modal-content">
     <div class="modal-header"><span id="viewMixSongsTitle">Songs in Mix</span><div class="modal-header-right"><span id="viewMixSongsCountChip" class="modal-count-chip">0 songs</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
-    <div style="display: flex; gap: 8px; margin-bottom: 0.8rem;">
-      <input type="text" id="viewMixSongsSearch" placeholder="🔎 Search within mix..." class="modal-search" style="margin:0;">
-      <div style="display: flex; gap: 6px;">
-        <button class="btn btn-outline" id="viewMixNormalModeBtn" style="padding:0.3rem 1rem;">👁️ Normal</button>
-        <button class="btn btn-outline" id="viewMixArrangeModeBtn" style="padding:0.3rem 1rem;">☰ Arrange</button>
-      </div>
-    </div>
-    <!-- Normal mode list -->
-    <div id="viewMixSongsListNormal" class="simple-song-list"></div>
-    <!-- Arrange mode (hidden by default) -->
-    <div id="viewMixSongsListArrange" style="display:none;">
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
-        <button class="btn btn-outline" id="shuffleMixSongsBtn" style="padding:0.3rem 1rem;">🔀 Shuffle</button>
-      </div>
-      <div id="arrangeSongList" class="arrange-list"></div>
-      <div class="modal-footer" style="margin-top:1rem;">
-        <button id="saveMixOrderBtn" class="btn btn-primary">Save Order</button>
-      </div>
-    </div>
-    <div class="modal-footer" id="viewMixNormalFooter">
-      <button class="btn btn-primary close-modal">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Quick Add Mini-Modal (Multi-select Tags & Mixes) -->
-<div id="quickAddModal" class="modal">
-  <div class="modal-content" style="max-width: 500px;">
-    <div class="modal-header"><span>➕ Quick Add</span><span class="close-modal" style="cursor:pointer">✖</span></div>
-    <p style="font-size:0.8rem; margin-bottom:0.5rem;">Song: <strong id="quickAddSongTitle"></strong></p>
-    <div class="modal-tabs" style="margin-bottom:0.5rem;">
-      <button id="quickAddTagsTab" class="modal-tab active">🏷️ Tags</button>
-      <button id="quickAddMixesTab" class="modal-tab">🎚️ Mixes</button>
-    </div>
-    <div id="quickAddTagsPanel">
-      <input type="text" id="quickAddTagSearch" placeholder="🔎 Search tags..." class="modal-search" style="margin-top:0;">
-      <div id="quickAddTagsList" class="check-list" style="max-height:200px;"></div>
-    </div>
-    <div id="quickAddMixesPanel" style="display:none;">
-      <input type="text" id="quickAddMixSearch" placeholder="🔎 Search mixes..." class="modal-search" style="margin-top:0;">
-      <div id="quickAddMixesList" class="check-list" style="max-height:200px;"></div>
-    </div>
-    <div class="selected-count" id="quickAddSelectedCount">0 selected</div>
-    <div class="modal-footer">
-      <button id="confirmQuickAddBtn" class="btn btn-primary">Add Selected</button>
-      <button class="btn btn-outline close-modal">Cancel</button>
-    </div>
+    <input type="text" id="viewMixSongsSearch" placeholder="🔎 Search within mix..." class="modal-search">
+    <div id="viewMixSongsList" class="simple-song-list"></div>
+    <div class="modal-footer"><button class="btn btn-primary close-modal">Close</button></div>
   </div>
 </div>
 
@@ -527,6 +474,7 @@ Second line"></textarea>
   </div>
 </div>
 
+<!-- Mix Modals -->
 <!-- Add/Edit Mix Modal -->
 <div id="mixModal" class="modal">
   <div class="modal-content">
