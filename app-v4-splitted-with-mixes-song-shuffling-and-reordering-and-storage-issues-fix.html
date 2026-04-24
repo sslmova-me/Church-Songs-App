@@ -59,7 +59,6 @@
           <option value="az">A → Z</option>
           <option value="za">Z → A</option>
           <option value="mostSongs">Most Songs</option>
-          <option value="recentTags">Recently Added</option>
         </select>
       </div>
       <input type="text" id="tagSearch" class="search-full" placeholder="🔍 Filter tags...">
@@ -218,8 +217,8 @@
 #J E S U S *2, oruko yen o lagbara
 Jesu ti Nazareti *2, o ti ran mi lowo"></textarea>
     <div class="modal-footer">
-      <button id="bulkAddToTagBtn" class="btn btn-primary">🏷️ Add to tag/mix</button>
-      <button id="confirmBulkBtn" class="btn btn-outline">Add All (no tags/mixes)</button>
+      <button id="bulkAddToTagBtn" class="btn btn-primary">🏷️ Add to tag</button>
+      <button id="confirmBulkBtn" class="btn btn-outline">Add All (no tag)</button>
       <button class="btn btn-outline close-modal">Cancel</button>
     </div>
   </div>
@@ -240,32 +239,22 @@ Line 2 of lyrics
 More lyrics...
 Second line"></textarea>
     <div class="modal-footer">
-      <button id="bulkLyricsAddToTagBtn" class="btn btn-primary">🏷️ Add to tag/mix</button>
-      <button id="confirmBulkLyricsBtn" class="btn btn-outline">Add All (no tags/mixes)</button>
+      <button id="bulkLyricsAddToTagBtn" class="btn btn-primary">🏷️ Add to tag</button>
+      <button id="confirmBulkLyricsBtn" class="btn btn-outline">Add All (no tag)</button>
       <button class="btn btn-outline close-modal">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- Bulk Tag & Mix Selection Modal -->
+<!-- Bulk Tag Selection Modal -->
 <div id="bulkTagSelectModal" class="modal">
   <div class="modal-content">
-    <div class="modal-header"><span>Select tags & mixes for imported songs</span><div class="modal-header-right"><span id="bulkTagSelectCount" class="modal-count-chip">0 items</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
-    <div class="modal-tabs" style="margin-bottom:0.5rem;">
-      <button id="bulkTagsTab" class="modal-tab active">🏷️ Tags</button>
-      <button id="bulkMixesTab" class="modal-tab">🎚️ Mixes</button>
-    </div>
-    <div id="bulkTagsPanel">
-      <input type="text" id="bulkTagSearch" placeholder="🔎 Search tags..." class="modal-search">
-      <div id="bulkTagList" class="check-list"></div>
-    </div>
-    <div id="bulkMixesPanel" style="display:none;">
-      <input type="text" id="bulkMixSearch" placeholder="🔎 Search mixes..." class="modal-search">
-      <div id="bulkMixList" class="check-list"></div>
-    </div>
-    <div class="selected-count" id="bulkSelectedCount">0 selected</div>
+    <div class="modal-header"><span>Select tags for imported songs</span><div class="modal-header-right"><span id="bulkTagSelectCount" class="modal-count-chip">0 tags</span><span class="close-modal" style="cursor:pointer">✖</span></div></div>
+    <input type="text" id="bulkTagSearch" placeholder="🔎 Search tags..." class="modal-search">
+    <div id="bulkTagList" class="check-list"></div>
+    <div class="selected-count" id="bulkTagSelectedCount">0 tags selected</div>
     <div class="modal-footer">
-      <button id="bulkConfirmBtn" class="btn btn-primary">Confirm & Import</button>
+      <button id="bulkTagConfirmBtn" class="btn btn-primary">Confirm & Import</button>
       <button class="btn btn-outline close-modal">Cancel</button>
     </div>
   </div>
@@ -364,6 +353,7 @@ Second line"></textarea>
       <span id="addSongsToTagFilterCount" class="modal-count-chip" style="margin-left: 8px;">0</span>
     </div>
     <div id="addSongsToTagFilterPanel" style="display: none; background: #f8fafc; border-radius: 20px; padding: 1rem; margin-bottom: 1rem;">
+      <!-- (same filter panel as before) -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
         <div class="toggle-switch" style="margin: 0;">
           <button id="addSongsToTagOrBtn" class="toggle-btn active">OR</button>
@@ -406,6 +396,7 @@ Second line"></textarea>
       <span id="manageMixSongsFilterCount" class="modal-count-chip" style="margin-left: 8px;">0</span>
     </div>
     <div id="manageMixSongsFilterPanel" style="display: none; background: #f8fafc; border-radius: 20px; padding: 1rem; margin-bottom: 1rem;">
+      <!-- (same filter panel) -->
       <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
         <div class="toggle-switch" style="margin: 0;">
           <button id="manageMixOrBtn" class="toggle-btn active">OR</button>

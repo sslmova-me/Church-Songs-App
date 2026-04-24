@@ -1,3 +1,47 @@
+7:48 AM 4/22/2026
+WAS EXPERIENCING AN ISSUE ON CHANGES NOT PERSISTING,
+WHAT WAS SAVED BEFORE SUDDENLY DOES NOT SHOW AGAIN
+SO i was provided a new script.js
+THIS HAPPENS BEFORE v4 (of the splitted files)
+
+SEARCHING
+list of nigerian makossa popular church songs
+https://www.youtube.com/watch?v=LfDqlBMAtL8
+
+Common Praise Songs (From Glory to Glory)
+
+Updates:
+1. For the Major Songs lists screen, lets have like a quick add button to add a song to a mix that it is not already in, so like the icons we already have lets add another icon to add it to a mix
+
+2. For the Tags List, we should add a 'Recently Added' to the filter dropdown to show the tags recently added first
+
+3. Smart search logic update 
+
+A a a e, this kind God, another one no dey o (already existing)
+A a a eee, This kind God another one no dey o (Makossa) (To add)
+
+Jehovah reigns, Jehovah reigns...You are lifted up, above other gods (already existing)
+Jehovah reigns, he reigns, you are lifted up (To add)
+
+Mo r'owo re l'aye mi, Mo r'ise re  l'aye mi (already existing)
+Mo ro wo re laiye mi (To add)
+
+Look at these samples, the 'already existing' and the ones 'to add'
+see how we can add it to the smart search logic
+
+4. In the Bulk edit modal, make the textarea for the input width 100%, make it full 
+
+5. In the single song addition, add the option to add the song to a particular tag, and also a particular mix
+
+6. We can also update this for the Bulk additions to add to mix (since we already have the option to add them to tag)
+
+
+
+
+that means index next one will be v4...the one with updated code for storage fixes
+index-v3-before-storage-issues-fix-b4-v4
+
+
 
 Check phone for updates too
 

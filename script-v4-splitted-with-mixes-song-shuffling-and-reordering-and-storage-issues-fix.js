@@ -1,15 +1,6 @@
 (function() {
   "use strict";
 
-  // ========== UTILITIES (must be defined before any usage) ==========
-  function escapeHtml(str) {
-    return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m);
-  }
-
-  function genId() {
-    return Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-  }
-
   // ---------- DATA ----------
   let songs = [];
   let tags = [];
@@ -45,28 +36,21 @@
   let arrangeSongList = [];
 
   const STORAGE_KEY = "SongTagAppData";
-  const FUZZY_THRESHOLD = 0.65;
-  const LOCAL_SUBSTRING_THRESHOLD = 0.85;
+  const FUZZY_THRESHOLD = 0.75;
 
+  // Prevent overlapping saves
   let isSaving = false;
 
-  // ---------- YORÙBÁ SMART NORMALISATION ----------
-  function yorubaNormalize(str) {
+  // ---------- UTILS ----------
+  function genId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+  function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m] || m); }
+
+  function normalize(str) {
     return str.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/r'owo/g, 'rowo')
-      .replace(/l'aye/g, 'laye')
-      .replace(/l'orun/g, 'lorun')
-      .replace(/t'o/g, 'to')
-      .replace(/ju o/g, 'juo')
       .replace(/[',()]/g, '')
       .replace(/[^\w\s]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  function normalize(str) {
-    return yorubaNormalize(str);
   }
 
   function levenshtein(a, b) {
@@ -93,21 +77,11 @@
     const normText = normalize(text);
     const normSearch = normalize(searchTerm);
     if (normText.includes(normSearch)) return true;
-    const searchLen = normSearch.length;
-    const textLen = normText.length;
-    if (searchLen > textLen) {
-      const maxLen = Math.max(textLen, searchLen);
-      return maxLen > 0 && (1 - levenshtein(normText, normSearch) / maxLen) >= threshold;
-    }
-    let bestLocalSim = 0;
-    for (let i = 0; i <= textLen - searchLen; i++) {
-      const substr = normText.substring(i, i + searchLen);
-      const dist = levenshtein(substr, normSearch);
-      const sim = 1 - dist / searchLen;
-      if (sim > bestLocalSim) bestLocalSim = sim;
-      if (bestLocalSim >= LOCAL_SUBSTRING_THRESHOLD) return true;
-    }
-    return bestLocalSim >= threshold;
+    const maxLen = Math.max(normText.length, normSearch.length);
+    if (maxLen === 0) return true;
+    const dist = levenshtein(normText, normSearch);
+    const similarity = 1 - dist / maxLen;
+    return similarity >= threshold;
   }
 
   function similarity(s1, s2) {
@@ -130,7 +104,7 @@
     return lines.slice(0,2).join(" ").trim().substring(0,60);
   }
 
-  // ---------- STORAGE ----------
+  // ---------- STORAGE (single source of truth) ----------
   function loadFromLocalStorage() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -142,7 +116,7 @@
         mixes = data.mixes || [];
         mixSongs = data.mixSongs || [];
         songs = songs.map(s => ({ ...s, lyrics: s.lyrics || '', createdAt: s.createdAt || Date.now() }));
-        tags = tags.map(t => ({ ...t, description: t.description || '', createdAt: t.createdAt || Date.now() }));
+        tags = tags.map(t => ({ ...t, description: t.description || '' }));
         mixes = mixes.map(m => ({ ...m, description: m.description || '', keyphrases: m.keyphrases || '', createdAt: m.createdAt || Date.now() }));
       } catch(e) {}
     }
@@ -153,8 +127,8 @@
         { id: genId(), title: "Orente", lyrics: "Orente mi\nWahala...", createdAt: Date.now() - 2000 }
       ];
       tags = [
-        { id: genId(), name: "Afrobeat", description: "", createdAt: Date.now() - 5000 },
-        { id: genId(), name: "Love", description: "", createdAt: Date.now() - 4000 }
+        { id: genId(), name: "Afrobeat", description: "" },
+        { id: genId(), name: "Love", description: "" }
       ];
       songTags = [
         { songId: songs[0].id, tagId: tags[0].id },
@@ -262,7 +236,7 @@
       try {
         const d = JSON.parse(e.target.result);
         songs = (d.songs || []).map(s=>({...s, lyrics:s.lyrics||'', createdAt: s.createdAt || Date.now()}));
-        tags = (d.tags || []).map(t=>({...t, description:t.description||'', createdAt: t.createdAt || Date.now()}));
+        tags = (d.tags || []).map(t=>({...t, description:t.description||''}));
         songTags = d.songTags || [];
         mixes = (d.mixes || []).map(m=>({...m, description:m.description||'', keyphrases:m.keyphrases||'', createdAt:m.createdAt||Date.now()}));
         mixSongs = d.mixSongs || [];
@@ -342,7 +316,7 @@
     document.getElementById('progressCloseBtn').disabled = false;
     currentProgressActive = false;
   }
-  async function runBulkWithProgress(items, addFn, tagIds = [], mixIds = []) {
+  async function runBulkWithProgress(items, addFn, tagIds = []) {
     const total = items.length;
     openProgressModal(total);
     let added=0, skipped=0, dups=0;
@@ -357,10 +331,9 @@
         else { skipped++; dups++; }
       } else { skipped++; }
     }
-    if (addedIds.length) {
-      for (const sid of addedIds) {
-        for (const tid of tagIds) { if (!songTags.some(st => st.songId===sid && st.tagId===tid)) songTags.push({songId:sid, tagId:tid}); }
-        for (const mid of mixIds) { if (!mixSongs.some(ms => ms.mixId===mid && ms.songId===sid)) mixSongs.push({mixId:mid, songId:sid}); }
+    if (tagIds.length && addedIds.length) {
+      for (const sid of addedIds) for (const tid of tagIds) {
+        if (!songTags.some(st => st.songId===sid && st.tagId===tid)) songTags.push({songId:sid, tagId:tid});
       }
       saveData();
     }
@@ -412,49 +385,28 @@
     return s;
   }
 
-  // Bulk tag & mix selection modal
+  // Bulk tag select
   function openBulkTagSelectModal(type, text) {
     currentBulkType = type; currentBulkText = text;
-    const selectedTags = new Set();
-    const selectedMixes = new Set();
-    const tagSearch = document.getElementById('bulkTagSearch');
-    const mixSearch = document.getElementById('bulkMixSearch');
-    const tagCont = document.getElementById('bulkTagList');
-    const mixCont = document.getElementById('bulkMixList');
-    const tagsTab = document.getElementById('bulkTagsTab');
-    const mixesTab = document.getElementById('bulkMixesTab');
-    const tagsPanel = document.getElementById('bulkTagsPanel');
-    const mixesPanel = document.getElementById('bulkMixesPanel');
-    let activeTab = 'tags';
-
-    function updateCount() {
-      document.getElementById('bulkSelectedCount').innerText = `${selectedTags.size + selectedMixes.size} selected`;
-    }
-    function renderTags() {
-      const q = tagSearch.value.toLowerCase();
+    const cont = document.getElementById('bulkTagList');
+    const search = document.getElementById('bulkTagSearch');
+    const selectedIds = new Set();
+    function render() {
+      const q = search.value.toLowerCase();
       const filtered = tags.filter(t=>t.name.toLowerCase().includes(q));
-      tagCont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="btag_${t.id}" ${selectedTags.has(t.id)?'checked':''}><label for="btag_${t.id}">🏷️ ${escapeHtml(t.name)}</label></div>`).join('');
+      cont.innerHTML = filtered.map(t=>`<div class="check-item"><input type="checkbox" value="${t.id}" id="btag_${t.id}" ${selectedIds.has(t.id)?'checked':''}><label for="btag_${t.id}">🏷️ ${escapeHtml(t.name)}</label></div>`).join('');
       document.getElementById('bulkTagSelectCount').innerText = filtered.length;
+      updateCount();
     }
-    function renderMixes() {
-      const q = mixSearch.value.toLowerCase();
-      const filtered = mixes.filter(m=>m.title.toLowerCase().includes(q)||(m.keyphrases||'').toLowerCase().includes(q));
-      mixCont.innerHTML = filtered.map(m=>`<div class="check-item"><input type="checkbox" value="${m.id}" id="bmix_${m.id}" ${selectedMixes.has(m.id)?'checked':''}><label for="bmix_${m.id}">🎚️ ${escapeHtml(m.title)}</label></div>`).join('');
-    }
-
-    tagCont.addEventListener('change', e => { if(e.target.type==='checkbox'){ if(e.target.checked) selectedTags.add(e.target.value); else selectedTags.delete(e.target.value); updateCount(); }});
-    mixCont.addEventListener('change', e => { if(e.target.type==='checkbox'){ if(e.target.checked) selectedMixes.add(e.target.value); else selectedMixes.delete(e.target.value); updateCount(); }});
-    tagSearch.oninput = renderTags;
-    mixSearch.oninput = renderMixes;
-    tagsTab.onclick = () => { activeTab='tags'; tagsTab.classList.add('active'); mixesTab.classList.remove('active'); tagsPanel.style.display='block'; mixesPanel.style.display='none'; };
-    mixesTab.onclick = () => { activeTab='mixes'; mixesTab.classList.add('active'); tagsTab.classList.remove('active'); mixesPanel.style.display='block'; tagsPanel.style.display='none'; };
-
-    renderTags(); renderMixes(); updateCount();
-    document.getElementById('bulkConfirmBtn').onclick = () => {
+    function updateCount() { document.getElementById('bulkTagSelectedCount').innerText = `${selectedIds.size} tag(s) selected`; }
+    cont.addEventListener('change', e => { if(e.target.type==='checkbox'){ if(e.target.checked) selectedIds.add(e.target.value); else selectedIds.delete(e.target.value); updateCount(); } });
+    search.oninput = render;
+    render();
+    document.getElementById('bulkTagConfirmBtn').onclick = () => {
       closeModal('bulkTagSelectModal');
-      const tagIds = Array.from(selectedTags), mixIds = Array.from(selectedMixes);
-      if (currentBulkType==='titles') runBulkWithProgress(parseTitlesBulk(currentBulkText).map(t=>({title:t})), addSingleTitle, tagIds, mixIds);
-      else runBulkWithProgress(parseLyricsBulk(currentBulkText), addSingleLyricsItem, tagIds, mixIds);
+      const ids = Array.from(selectedIds);
+      if (currentBulkType==='titles') runBulkWithProgress(parseTitlesBulk(currentBulkText).map(t=>({title:t})), addSingleTitle, ids);
+      else runBulkWithProgress(parseLyricsBulk(currentBulkText), addSingleLyricsItem, ids);
     };
     document.getElementById('bulkTagSelectModal').style.display = 'flex';
   }
@@ -588,7 +540,6 @@
             <div class="card-actions">
               <button class="icon-btn view-details-btn" data-id="${song.id}" title="View details">👁️</button>
               <button class="icon-btn add-tag-btn" data-id="${song.id}" title="Assign tags">🏷️</button>
-              <button class="icon-btn quick-add-mix-btn" data-id="${song.id}" title="Add to mix/tag">🎚️</button>
               <button class="icon-btn edit-song-btn" data-id="${song.id}" title="Edit">✏️</button>
               <button class="icon-btn delete-song-btn" data-id="${song.id}" title="Delete">🗑️</button>
             </div>
@@ -613,8 +564,6 @@
         const countB = songTags.filter(st => st.tagId === b.id).length;
         return countB - countA || a.name.localeCompare(b.name);
       });
-    } else if (sort === 'recentTags') {
-      filtered.sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
     }
     const container = document.getElementById('tagsContainer');
     if (!filtered.length) { container.innerHTML = '<div style="padding:1rem;">No tags found</div>'; }
@@ -731,11 +680,6 @@
         document.getElementById('detailsSongLyrics').innerText = s.lyrics || '(No lyrics)';
         document.getElementById('songDetailsModal').style.display = 'flex';
       }
-    }));
-    document.querySelectorAll('.quick-add-mix-btn').forEach(b => b.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const songId = b.dataset.id;
-      openQuickAddModal(songId);
     }));
     document.querySelectorAll('.add-tag-btn').forEach(b => b.addEventListener('click', () => openAssignTagsModal(b.dataset.id)));
     document.querySelectorAll('.edit-song-btn').forEach(b => b.addEventListener('click', () => openEditSongModal(b.dataset.id)));
@@ -1333,7 +1277,10 @@
       countSpan.innerText = `${filteredTags.length} tag${filteredTags.length !== 1 ? 's' : ''}`;
     }
     container.addEventListener('change', (e) => {
-      if (e.target.type === 'checkbox') { const tagId = e.target.value; if (e.target.checked) selectedIds.add(tagId); else selectedIds.delete(tagId); }
+      if (e.target.type === 'checkbox') {
+        const tagId = e.target.value;
+        if (e.target.checked) selectedIds.add(tagId); else selectedIds.delete(tagId);
+      }
     });
     searchInput.oninput = render;
     render();
@@ -1398,30 +1345,6 @@
     document.getElementById('statsModal').style.display='flex';
   }
 
-  // ========== SAVE SONG & AUTO QUICK ADD ==========
-  const saveSongBtn = document.getElementById('saveSongBtn');
-  saveSongBtn.onclick = async () => {
-    let title = document.getElementById('songTitleInput').value.trim();
-    const lyrics = document.getElementById('songLyricsInput').value;
-    if (!title && lyrics) title = autoTitleFromLyrics(lyrics);
-    if (!title) { showSummary('Title required'); return; }
-    let savedSongId = null;
-    if (!editingSongId) {
-      if (!await confirmAddWithDuplicateCheck(title)) { closeAllModals(); return; }
-      const s = { id: genId(), title, lyrics, createdAt: Date.now() };
-      songs.push(s);
-      savedSongId = s.id;
-    } else {
-      const s = songs.find(s=>s.id===editingSongId);
-      if (s) { s.title=title; s.lyrics=lyrics; }
-      savedSongId = editingSongId;
-    }
-    saveData(); refreshUI();
-    closeModal('songModal');
-    // Open Quick Add for the saved/edited song
-    openQuickAddModal(savedSongId);
-  };
-
   // Bind events
   function bindEvents() {
     document.getElementById('menuToggle').onclick = openDrawer;
@@ -1451,15 +1374,77 @@
     document.getElementById('sortTags').addEventListener('change', renderTags);
     document.getElementById('mixSearch').addEventListener('input', renderMixes);
     document.getElementById('sortMixes').addEventListener('change', renderMixes);
-    document.getElementById('bulkAddToTagBtn').onclick = ()=>{ const text = document.getElementById('bulkSongsTextarea').value; if (text.trim()) openBulkTagSelectModal('titles', text); else showSummary('No songs'); };
-    document.getElementById('bulkLyricsAddToTagBtn').onclick = ()=>{ const text = document.getElementById('bulkLyricsTextarea').value; if (text.trim()) openBulkTagSelectModal('lyrics', text); else showSummary('No songs'); };
-    document.getElementById('confirmBulkBtn').onclick = ()=>{ const text = document.getElementById('bulkSongsTextarea').value; if (text.trim()) runBulkWithProgress(parseTitlesBulk(text).map(t=>({title:t})), addSingleTitle, [], []); closeModal('bulkModal'); };
-    document.getElementById('confirmBulkLyricsBtn').onclick = ()=>{ const text = document.getElementById('bulkLyricsTextarea').value; if (text.trim()) runBulkWithProgress(parseLyricsBulk(text), addSingleLyricsItem, [], []); closeModal('bulkLyricsModal'); };
-    document.getElementById('confirmAddTagBtn').onclick = ()=>{ const name = document.getElementById('addTagNameInput').value.trim(); if (!name) { showSummary('Tag name required'); return; } tags.push({ id: genId(), name, description: document.getElementById('addTagDescInput').value, createdAt: Date.now() }); saveData(); renderSongs(); renderTags(); closeModal('addTagModal'); };
-    document.getElementById('saveMixBtn').onclick = ()=>{ const title = document.getElementById('mixTitleInput').value.trim(); if (!title) { showSummary('Title required'); return; } const data = { title, description: document.getElementById('mixDescInput').value, keyphrases: document.getElementById('mixKeyphrasesInput').value, createdAt: editingMixId ? mixes.find(m=>m.id===editingMixId)?.createdAt : Date.now() }; if (editingMixId) Object.assign(mixes.find(m=>m.id===editingMixId), data); else mixes.push({ id: genId(), ...data }); saveData(); renderMixes(); closeModal('mixModal'); };
-    document.getElementById('saveEditTagBtn').onclick = ()=>{ const name = document.getElementById('editTagNameInput').value.trim(); if (!name) { showSummary('Tag name required'); return; } const tag = tags.find(t=>t.id===editingTagId); if (tag) { tag.name=name; tag.description=document.getElementById('editTagDescInput').value; } for (const sid of tagSongsToRemove) songTags = songTags.filter(st=>!(st.songId===sid && st.tagId===editingTagId)); saveData(); renderSongs(); renderTags(); closeModal('editTagModal'); };
-    document.getElementById('editTagDetailsTab').onclick = ()=>{ document.getElementById('editTagDetailsPanel').style.display='block'; document.getElementById('editTagSongsPanel').style.display='none'; document.getElementById('editTagDetailsTab').classList.add('active'); document.getElementById('editTagSongsTab').classList.remove('active'); };
-    document.getElementById('editTagSongsTab').onclick = ()=>{ document.getElementById('editTagDetailsPanel').style.display='none'; document.getElementById('editTagSongsPanel').style.display='block'; document.getElementById('editTagDetailsTab').classList.remove('active'); document.getElementById('editTagSongsTab').classList.add('active'); renderEditTagSongsList(); };
+    document.getElementById('confirmBulkBtn').onclick = ()=>{
+      const text = document.getElementById('bulkSongsTextarea').value;
+      if (text.trim()) runBulkWithProgress(parseTitlesBulk(text).map(t=>({title:t})), addSingleTitle, []);
+      closeModal('bulkModal');
+    };
+    document.getElementById('confirmBulkLyricsBtn').onclick = ()=>{
+      const text = document.getElementById('bulkLyricsTextarea').value;
+      if (text.trim()) runBulkWithProgress(parseLyricsBulk(text), addSingleLyricsItem, []);
+      closeModal('bulkLyricsModal');
+    };
+    document.getElementById('bulkAddToTagBtn').onclick = ()=>{
+      const text = document.getElementById('bulkSongsTextarea').value;
+      if (text.trim()) openBulkTagSelectModal('titles', text); else showSummary('No songs');
+    };
+    document.getElementById('bulkLyricsAddToTagBtn').onclick = ()=>{
+      const text = document.getElementById('bulkLyricsTextarea').value;
+      if (text.trim()) openBulkTagSelectModal('lyrics', text); else showSummary('No songs');
+    };
+    document.getElementById('saveSongBtn').onclick = async ()=>{
+      let title = document.getElementById('songTitleInput').value.trim();
+      const lyrics = document.getElementById('songLyricsInput').value;
+      if (!title && lyrics) title = autoTitleFromLyrics(lyrics);
+      if (!title) { showSummary('Title required'); return; }
+      if (!editingSongId) {
+        if (!await confirmAddWithDuplicateCheck(title)) { closeAllModals(); return; }
+        songs.push({ id: genId(), title, lyrics, createdAt: Date.now() });
+      } else {
+        const s = songs.find(s=>s.id===editingSongId);
+        if (s) { s.title=title; s.lyrics=lyrics; }
+      }
+      saveData(); refreshUI(); closeAllModals();
+    };
+    document.getElementById('confirmAddTagBtn').onclick = ()=>{
+      const name = document.getElementById('addTagNameInput').value.trim();
+      if (!name) { showSummary('Tag name required'); return; }
+      tags.push({ id: genId(), name, description: document.getElementById('addTagDescInput').value });
+      saveData(); renderSongs(); renderTags(); closeModal('addTagModal');
+    };
+    document.getElementById('saveMixBtn').onclick = ()=>{
+      const title = document.getElementById('mixTitleInput').value.trim();
+      if (!title) { showSummary('Title required'); return; }
+      const data = {
+        title, description: document.getElementById('mixDescInput').value,
+        keyphrases: document.getElementById('mixKeyphrasesInput').value,
+        createdAt: editingMixId ? mixes.find(m=>m.id===editingMixId)?.createdAt : Date.now()
+      };
+      if (editingMixId) Object.assign(mixes.find(m=>m.id===editingMixId), data);
+      else mixes.push({ id: genId(), ...data });
+      saveData(); renderMixes(); closeModal('mixModal');
+    };
+    document.getElementById('saveEditTagBtn').onclick = ()=>{
+      const name = document.getElementById('editTagNameInput').value.trim();
+      if (!name) { showSummary('Tag name required'); return; }
+      const tag = tags.find(t=>t.id===editingTagId);
+      if (tag) { tag.name=name; tag.description=document.getElementById('editTagDescInput').value; }
+      for (const sid of tagSongsToRemove) songTags = songTags.filter(st=>!(st.songId===sid && st.tagId===editingTagId));
+      saveData(); renderSongs(); renderTags(); closeModal('editTagModal');
+    };
+    document.getElementById('editTagDetailsTab').onclick = ()=>{
+      document.getElementById('editTagDetailsPanel').style.display='block';
+      document.getElementById('editTagSongsPanel').style.display='none';
+      document.getElementById('editTagDetailsTab').classList.add('active');
+      document.getElementById('editTagSongsTab').classList.remove('active');
+    };
+    document.getElementById('editTagSongsTab').onclick = ()=>{
+      document.getElementById('editTagDetailsPanel').style.display='none';
+      document.getElementById('editTagSongsPanel').style.display='block';
+      document.getElementById('editTagDetailsTab').classList.remove('active');
+      document.getElementById('editTagSongsTab').classList.add('active');
+      renderEditTagSongsList();
+    };
     document.getElementById('editTagSongsSearch').addEventListener('input', renderEditTagSongsList);
     document.getElementById('dupAddBtn').onclick = ()=>{ if(currentResolveDuplicate){ currentResolveDuplicate(true); closeModal('duplicateModal'); currentResolveDuplicate=null; } };
     document.getElementById('dupSkipBtn').onclick = ()=>{ if(currentResolveDuplicate){ currentResolveDuplicate(false); closeModal('duplicateModal'); currentResolveDuplicate=null; } };

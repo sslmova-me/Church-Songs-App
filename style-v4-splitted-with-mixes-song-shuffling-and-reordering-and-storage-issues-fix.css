@@ -10,14 +10,6 @@ body {
   min-height: 100vh;
 }
 
-textarea {
-    width: 100%;
-    border-radius: 24px;
-    padding: 10px;
-    border: 1px solid #cbd5e1;
-    font-family: inherit;
-}
-
 #app {
   max-width: 1200px;
   margin: 0 auto;
@@ -557,10 +549,10 @@ textarea {
   animation: fadeUp 0.2s ease;
 }
 
-@media (max-width: 576px) {
-  .modal-content { padding: 1.0rem .75rem; }
-}
 
+@media(max-width: 576px){
+    .modal-content { padding: 1.0rem .75rem ;}
+}
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -822,6 +814,19 @@ textarea {
   padding-left: 4px;
 }
 
+@media (max-width: 600px) {
+  .panel-container {
+    padding: 0 0.8rem 1rem;
+  }
+  .fab-container {
+    bottom: 20px;
+    right: 20px;
+  }
+  .panel-title h2 {
+    font-size: 1.4rem;
+  }
+}
+
 /* Additional styles for new features */
 .filtered-badge {
   background: #fee2e2;
@@ -841,6 +846,7 @@ textarea {
   width: 100%;
   box-sizing: border-box;
 }
+
 
 /* Quick Add toggle button active state */
 .btn-outline.active-quick {
@@ -884,15 +890,18 @@ textarea {
   color: white;
 }
 
-@media (max-width: 600px) {
-  .panel-container {
-    padding: 0 0.8rem 1rem;
-  }
-  .fab-container {
-    bottom: 20px;
-    right: 20px;
-  }
-  .panel-title h2 {
-    font-size: 1.4rem;
-  }
+/* Filtered badge already defined */
+.filtered-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.assign-song-title {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.8rem;
+  padding-left: 4px;
+}
+.modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
